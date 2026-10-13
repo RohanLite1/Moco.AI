@@ -113,7 +113,7 @@ const SOUND_LIBRARY = [
       }
     ]
   },
-  // COLUMN 4: REST
+  // COLUMN 4: REST (Real User Rest Audio Files)
   {
     category: 'rest',
     categoryName: 'Rest',
@@ -123,25 +123,25 @@ const SOUND_LIBRARY = [
         id: 'theta-rest',
         title: 'Theta Rest',
         desc: '4Hz Deep Sleep Tone',
-        type: 'synth',
-        freqs: [100, 104, 208],
-        badge: 'Theta'
+        audioSrc: './audio/theta-rest.mp3',
+        type: 'audio-file',
+        badge: 'Rest MP3'
       },
       {
         id: 'cosmic-drift',
         title: 'Cosmic Drift',
         desc: 'Starlight Ambient Pad',
-        type: 'synth',
-        freqs: [98.0, 146.83, 196.0, 293.66],
-        badge: 'Ambient'
+        audioSrc: './audio/cosmic-drift.mp3',
+        type: 'audio-file',
+        badge: 'Rest MP3'
       },
       {
         id: 'warm-sub',
         title: 'Warm Sub',
         desc: 'Analog Low Drone',
-        type: 'synth',
-        freqs: [55.0, 110.0, 165.0],
-        badge: 'Drone'
+        audioSrc: './audio/warm-sub.mp3',
+        type: 'audio-file',
+        badge: 'Rest MP3'
       }
     ]
   }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Minus, Pin, Sparkles, MessageSquare, Timer, CheckSquare, Music, Gamepad2 } from 'lucide-react';
-import HologramOrb from '../visuals3d/HologramOrb';
+import RobotAvatar from '../visuals3d/RobotAvatar';
 import { api } from '../services/api';
 
 export default function HudContainer({
@@ -50,7 +50,9 @@ export default function HudContainer({
         {/* Left Section: 3D Hologram + Navigation */}
         <aside className="hud-left">
           {/* 3D Visualizer */}
-          <HologramOrb status={aiStatus} />
+          <div style={{ width: '100%', height: '240px' }}>
+            <RobotAvatar status={aiStatus} />
+          </div>
 
           {/* Navigation Menu */}
           <nav className="hud-nav">

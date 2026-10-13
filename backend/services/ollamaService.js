@@ -4,8 +4,25 @@ dotenv.config();
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
 const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'gemma3:4b';
 
+// In-memory conversation history for multi-turn chat
+let conversationHistory = [];
+
+const SYSTEM_PROMPT = {
+  role: 'system',
+  content: "You are Moco, a fast, futuristic, and helpful desktop AI companion with a sleek cyber-aesthetic. Keep answers concise, direct, and actionable. You remember context from earlier in the conversation."
+};
+
+export function clearConversationHistory() {
+  conversationHistory = [];
+  return true;
+}
+
+export function getConversationHistory() {
+  return [...conversationHistory];
+}
+
 /**
- * Streams response from local Ollama instance (3B/4B model)
+ * Streams response from local Ollama instance with multi-turn memory
  */
 export async function generateStreamingResponse(prompt, onChunk, onStatus) {
   const model = process.env.OLLAMA_MODEL || DEFAULT_MODEL;
@@ -13,13 +30,22 @@ export async function generateStreamingResponse(prompt, onChunk, onStatus) {
   try {
     onStatus?.('thinking');
 
-    const response = await fetch(`${OLLAMA_HOST}/api/generate`, {
+    // Add user message to history
+    conversationHistory.push({ role: 'user', content: prompt });
+
+    // Keep history manageable (last 16 messages)
+    if (conversationHistory.length > 16) {
+      conversationHistory = conversationHistory.slice(-16);
+    }
+
+    const messages = [SYSTEM_PROMPT, ...conversationHistory];
+
+    const response = await fetch(`${OLLAMA_HOST}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: model,
-        prompt: prompt,
-        system: "You are Moco, a fast, futuristic, and helpful desktop AI companion with a sleek cyber-aesthetic. Keep answers concise, direct, and actionable.",
+        messages: messages,
         stream: true
       })
     });
@@ -32,7 +58,7 @@ export async function generateStreamingResponse(prompt, onChunk, onStatus) {
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
-    let fullText = '';
+    let fullAssistantResponse = '';
     let buffer = '';
 
     while (true) {
@@ -41,15 +67,16 @@ export async function generateStreamingResponse(prompt, onChunk, onStatus) {
 
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
-      buffer = lines.pop(); // Keep incomplete line in buffer
+      buffer = lines.pop();
 
       for (const line of lines) {
         if (!line.trim()) continue;
         try {
           const parsed = JSON.parse(line);
-          if (parsed.response) {
-            fullText += parsed.response;
-            onChunk?.(parsed.response);
+          const chunk = parsed.message?.content || parsed.response;
+          if (chunk) {
+            fullAssistantResponse += chunk;
+            onChunk?.(chunk);
           }
         } catch (jsonErr) {
           // ignore partial JSON chunk
@@ -57,8 +84,13 @@ export async function generateStreamingResponse(prompt, onChunk, onStatus) {
       }
     }
 
+    // Save assistant reply to memory
+    if (fullAssistantResponse) {
+      conversationHistory.push({ role: 'assistant', content: fullAssistantResponse });
+    }
+
     onStatus?.('idle');
-    return fullText;
+    return fullAssistantResponse;
   } catch (err) {
     onStatus?.('idle');
     if (err.cause?.code === 'ECONNREFUSED' || err.message.includes('fetch failed')) {

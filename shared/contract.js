@@ -4,32 +4,68 @@
  */
 
 export const IPC_CHANNELS = {
-  // AI Chat
+  // 1. AI Chat & Memory
   AI_PROMPT: 'ai:prompt',
-  AI_STREAM_CHUNK: 'ai:stream-chunk',
   AI_STATUS_CHANGE: 'ai:status-change',
+  AI_CLEAR_HISTORY: 'ai:clear-history',
+  AI_HEALTH: 'ai:health',
+
+  // 2. Focus & Mathematics
+  MATH_EVALUATE: 'math:evaluate',
+  MATH_GRAPH: 'math:graph',
+
+  // 3. Games Engines
+  GAME_CHESS_INIT: 'game:chess:init',
+  GAME_CHESS_MOVE: 'game:chess:move',
+  GAME_CHESS_BOT: 'game:chess:bot',
+  GAME_CHECKERS_MOVE: 'game:checkers:move',
+  GAME_TETRIS_ACTION: 'game:tetris:action',
+  GAME_SNAKE_ACTION: 'game:snake:action',
+
+  // 4. Screen Analysis & Translator
+  SCREEN_CAPTURE: 'screen:capture',
+  SCREEN_ANALYZE: 'screen:analyze',
+  TRANSLATE_TEXT: 'translate:text',
 
   // Window & System
   WINDOW_TOGGLE: 'window:toggle',
   WINDOW_HIDE: 'window:hide',
   WINDOW_PIN: 'window:pin',
 
-  // Data Persistence (Todos, Settings, etc.)
+  // Data Persistence
   STORAGE_GET: 'storage:get',
   STORAGE_SET: 'storage:set',
-
-  // System Audio / Notification
   SYSTEM_NOTIFICATION: 'system:notify'
 };
 
 /**
- * Expected window.mocoApi methods:
+ * Expected window.mocoApi signatures:
  * 
- * - window.mocoApi.askAI(prompt: string, callback: (chunk: string, done: boolean) => void): Promise<string>
- * - window.mocoApi.onAIStatus(callback: (status: 'idle' | 'thinking' | 'speaking') => void): () => void
- * - window.mocoApi.hideWindow(): void
- * - window.mocoApi.togglePin(): Promise<boolean>
- * - window.mocoApi.getStorage(key: string, defaultValue?: any): Promise<any>
- * - window.mocoApi.setStorage(key: string, value: any): Promise<boolean>
- * - window.mocoApi.notify(title: string, body: string): void
+ * --- AI Chat ---
+ * - askAI(prompt: string, callback: (chunk: string) => void): Promise<string>
+ * - clearAIHistory(): Promise<boolean>
+ * - checkAIHealth(): Promise<{ online: boolean, models: string[] }>
+ * - onAIStatus(callback: (status: 'idle' | 'thinking' | 'speaking') => void): () => void
+ * 
+ * --- Focus: Math & Desmos Graphing ---
+ * - evaluateMath(expression: string): Promise<{ result: number, formatted: string, error?: string }>
+ * - generateGraphData(fn: string, xMin?: number, xMax?: number, samples?: number): Promise<{ points: {x,y}[], roots: number[] }>
+ * 
+ * --- Fun: Games ---
+ * - chessMove(move: {from: {r,c}, to: {r,c}}): Promise<{ success: boolean, board: string[][], turn: string }>
+ * - chessBotMove(): Promise<{ from: {r,c}, to: {r,c} }>
+ * - tetrisAction(action: 'tick' | 'left' | 'right' | 'rotate' | 'drop'): Promise<any>
+ * - snakeAction(action: 'tick' | 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'): Promise<any>
+ * 
+ * --- Screen & Navigation ---
+ * - captureScreen(): Promise<{ dataUrl: string, resolution: {width, height} }>
+ * - analyzeScreen(prompt?: string): Promise<{ capture: any, analysis: string }>
+ * - translate(text: string, targetLanguage: string): Promise<{ translation: string }>
+ * 
+ * --- System & Storage ---
+ * - hideWindow(): void
+ * - togglePin(): Promise<boolean>
+ * - getStorage(key: string, defaultValue?: any): Promise<any>
+ * - setStorage(key: string, value: any): Promise<boolean>
+ * - notify(title: string, body: string): void
  */

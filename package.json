@@ -10,6 +10,8 @@
     "dev:frontend": "vite --config frontend/vite.config.js frontend",
     "dev:electron": "electron backend/main.js",
     "build:frontend": "vite build --config frontend/vite.config.js frontend",
+    "test:backend": "node backend/tests/test-runner.js",
+    "test:backend:auto": "node backend/tests/test-runner.js --auto",
     "start": "electron backend/main.js"
   },
   "dependencies": {

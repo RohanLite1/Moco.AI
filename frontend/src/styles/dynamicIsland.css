@@ -164,25 +164,141 @@
   justify-content: center;
   gap: 3px;
   height: 26px;
-  padding: 0 14px;
+  padding: 0 12px;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.25);
+  transition: background 0.3s ease;
+}
+
+.theme-light .pill-center {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.pill-center.active {
+  background: rgba(6, 182, 212, 0.14);
 }
 
 .soundwave-bar {
   width: 3px;
   background: var(--island-waveform);
   border-radius: 9999px;
-  transition: height 0.15s ease;
-  animation: soundwaveBounce 1.4s infinite ease-in-out;
+  transform-origin: center;
+  will-change: transform, opacity;
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
-@keyframes soundwaveBounce {
+/* Idle State: Gentle ambient breathing wave */
+.soundwave-bar.idle {
+  animation: soundwaveIdle 2.2s infinite ease-in-out;
+  opacity: 0.55;
+}
+
+/* Active State (Music playing, AI speaking, Mic listening) */
+.soundwave-bar.active {
+  opacity: 1;
+  box-shadow: 0 0 6px rgba(6, 182, 212, 0.4);
+}
+
+/* Varied Equalizer Rhythm Animations for natural, fluid motion */
+.soundwave-bar.active:nth-child(4n + 1) {
+  animation: soundwaveActive1 0.72s infinite ease-in-out;
+}
+.soundwave-bar.active:nth-child(4n + 2) {
+  animation: soundwaveActive2 0.88s infinite ease-in-out;
+}
+.soundwave-bar.active:nth-child(4n + 3) {
+  animation: soundwaveActive3 0.65s infinite ease-in-out;
+}
+.soundwave-bar.active:nth-child(4n) {
+  animation: soundwaveActive4 0.94s infinite ease-in-out;
+}
+
+/* Idle gentle organic pulse */
+@keyframes soundwaveIdle {
   0%, 100% {
-    height: 4px;
-    opacity: 0.45;
+    transform: scaleY(0.22);
+    opacity: 0.35;
   }
   50% {
-    height: 22px;
+    transform: scaleY(0.5);
+    opacity: 0.75;
+  }
+}
+
+/* Multi-frequency chaotic active waveforms */
+@keyframes soundwaveActive1 {
+  0%, 100% {
+    transform: scaleY(0.25);
+    opacity: 0.6;
+  }
+  30% {
+    transform: scaleY(1.05);
     opacity: 1;
+  }
+  65% {
+    transform: scaleY(0.45);
+    opacity: 0.75;
+  }
+  85% {
+    transform: scaleY(0.9);
+    opacity: 0.95;
+  }
+}
+
+@keyframes soundwaveActive2 {
+  0%, 100% {
+    transform: scaleY(0.4);
+    opacity: 0.7;
+  }
+  25% {
+    transform: scaleY(0.2);
+    opacity: 0.5;
+  }
+  55% {
+    transform: scaleY(1.1);
+    opacity: 1;
+  }
+  80% {
+    transform: scaleY(0.55);
+    opacity: 0.8;
+  }
+}
+
+@keyframes soundwaveActive3 {
+  0%, 100% {
+    transform: scaleY(0.3);
+    opacity: 0.55;
+  }
+  40% {
+    transform: scaleY(0.85);
+    opacity: 0.9;
+  }
+  60% {
+    transform: scaleY(0.22);
+    opacity: 0.5;
+  }
+  85% {
+    transform: scaleY(1.02);
+    opacity: 1;
+  }
+}
+
+@keyframes soundwaveActive4 {
+  0%, 100% {
+    transform: scaleY(0.5);
+    opacity: 0.75;
+  }
+  35% {
+    transform: scaleY(0.95);
+    opacity: 1;
+  }
+  50% {
+    transform: scaleY(0.3);
+    opacity: 0.6;
+  }
+  75% {
+    transform: scaleY(0.8);
+    opacity: 0.85;
   }
 }
 

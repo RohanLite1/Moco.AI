@@ -260,28 +260,137 @@
 /* Audio Visualizer Equalizer Waves */
 .music-equalizer {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   gap: 3px;
-  height: 28px;
-  padding: 2px 10px;
-  background: rgba(0, 0, 0, 0.03);
-  border-radius: 8px;
+  height: 30px;
+  padding: 2px 12px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 9999px;
+  transition: all 0.3s ease;
 }
 
 .theme-dark .music-equalizer {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.music-equalizer.playing {
+  background: rgba(8, 145, 178, 0.08);
+}
+
+.theme-dark .music-equalizer.playing {
+  background: rgba(34, 211, 238, 0.12);
 }
 
 .music-equalizer-bar {
   width: 3.5px;
   border-radius: 9999px;
   background: #0891b2;
-  transition: height 0.18s ease;
+  transform-origin: center;
+  will-change: transform, opacity;
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
 .theme-dark .music-equalizer-bar {
   background: #22d3ee;
+}
+
+.music-equalizer-bar.paused {
+  transform: scaleY(0.2);
+  opacity: 0.35;
+}
+
+.music-equalizer-bar.playing {
+  opacity: 1;
+}
+
+.music-equalizer-bar.playing:nth-child(4n + 1) {
+  animation: musicBarAnim1 0.72s infinite ease-in-out;
+}
+.music-equalizer-bar.playing:nth-child(4n + 2) {
+  animation: musicBarAnim2 0.88s infinite ease-in-out;
+}
+.music-equalizer-bar.playing:nth-child(4n + 3) {
+  animation: musicBarAnim3 0.65s infinite ease-in-out;
+}
+.music-equalizer-bar.playing:nth-child(4n) {
+  animation: musicBarAnim4 0.94s infinite ease-in-out;
+}
+
+@keyframes musicBarAnim1 {
+  0%, 100% {
+    transform: scaleY(0.22);
+    opacity: 0.55;
+  }
+  30% {
+    transform: scaleY(1.05);
+    opacity: 1;
+  }
+  65% {
+    transform: scaleY(0.42);
+    opacity: 0.7;
+  }
+  85% {
+    transform: scaleY(0.88);
+    opacity: 0.95;
+  }
+}
+
+@keyframes musicBarAnim2 {
+  0%, 100% {
+    transform: scaleY(0.4);
+    opacity: 0.7;
+  }
+  25% {
+    transform: scaleY(0.2);
+    opacity: 0.45;
+  }
+  55% {
+    transform: scaleY(1.1);
+    opacity: 1;
+  }
+  80% {
+    transform: scaleY(0.5);
+    opacity: 0.75;
+  }
+}
+
+@keyframes musicBarAnim3 {
+  0%, 100% {
+    transform: scaleY(0.28);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scaleY(0.85);
+    opacity: 0.9;
+  }
+  60% {
+    transform: scaleY(0.2);
+    opacity: 0.45;
+  }
+  85% {
+    transform: scaleY(1.02);
+    opacity: 1;
+  }
+}
+
+@keyframes musicBarAnim4 {
+  0%, 100% {
+    transform: scaleY(0.48);
+    opacity: 0.7;
+  }
+  35% {
+    transform: scaleY(0.96);
+    opacity: 1;
+  }
+  50% {
+    transform: scaleY(0.28);
+    opacity: 0.55;
+  }
+  75% {
+    transform: scaleY(0.82);
+    opacity: 0.85;
+  }
 }
 
 /* Volume Control Row */

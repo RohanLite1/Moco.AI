@@ -35,8 +35,20 @@ export default function DynamicIsland({
   const [voiceAnswer, setVoiceAnswer] = useState('');
   const [batteryPercent, setBatteryPercent] = useState(100);
   const [isCharging, setIsCharging] = useState(false);
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const [nowPlayingTitle, setNowPlayingTitle] = useState('');
   const recognitionRef = useRef(null);
   const latestTranscriptRef = useRef('');
+
+  // Sync with global music playback status
+  useEffect(() => {
+    const handleMusicStatus = (e) => {
+      setIsMusicPlaying(Boolean(e.detail?.isPlaying));
+      setNowPlayingTitle(e.detail?.track?.title || '');
+    };
+    window.addEventListener('moco:music-status', handleMusicStatus);
+    return () => window.removeEventListener('moco:music-status', handleMusicStatus);
+  }, []);
 
   // Real device battery telemetry
   useEffect(() => {
@@ -307,6 +319,8 @@ export default function DynamicIsland({
                     <span style={{ color: '#38bdf8', fontWeight: 600 }}>{voiceStatusText}</span>
                   ) : voiceTranscript ? (
                     <span style={{ color: '#38bdf8' }}>{`Hearing: "${voiceTranscript}"`}</span>
+                  ) : isMusicPlaying && nowPlayingTitle ? (
+                    <span style={{ color: '#38bdf8', fontWeight: 500 }}>{`Playing: ${nowPlayingTitle}`}</span>
                   ) : (
                     <>
                       {aiStatus === 'thinking' && 'Analyzing query...'}
@@ -321,18 +335,26 @@ export default function DynamicIsland({
             </div>
 
             {/* Middle: Live Audio Waveform Equalizer */}
-            <div className="pill-center" title="Audio Waveform Visualizer">
-              {[12, 18, 8, 22, 14, 26, 16, 24, 10, 20, 14, 18, 8, 15].map((h, i) => (
+            {(() => {
+              const isAudioActive = isMusicPlaying || aiStatus === 'speaking' || aiStatus === 'listening';
+              return (
                 <div
-                  key={i}
-                  className="soundwave-bar"
-                  style={{
-                    height: aiStatus === 'speaking' ? `${h}px` : aiStatus === 'listening' ? `${Math.max(6, h * 0.7)}px` : '5px',
-                    animationDelay: `${i * 0.08}s`
-                  }}
-                />
-              ))}
-            </div>
+                  className={`pill-center ${isAudioActive ? 'active' : 'idle'}`}
+                  title={isMusicPlaying ? `Now Playing: ${nowPlayingTitle}` : "Live Audio Waveform Visualizer"}
+                >
+                  {[12, 18, 9, 22, 14, 26, 16, 24, 11, 20, 15, 19, 10, 14].map((h, i) => (
+                    <div
+                      key={i}
+                      className={`soundwave-bar ${isAudioActive ? 'active' : 'idle'}`}
+                      style={{
+                        height: `${h}px`,
+                        animationDelay: `${(i * 0.07).toFixed(2)}s`
+                      }}
+                    />
+                  ))}
+                </div>
+              );
+            })()}
 
             {/* Right: Telemetry & Quick Action Controls */}
             <div className="pill-actions">

@@ -362,9 +362,25 @@ export default function MusicWidget() {
     };
   }, []);
 
+  // Emit global music status so Dynamic Island's equalizer syncs with playback
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('moco:music-status', {
+        detail: { isPlaying, track: currentTrack }
+      })
+    );
+  }, [isPlaying, currentTrack]);
+
   // Cleanup on unmount
   useEffect(() => {
-    return () => stopAll();
+    return () => {
+      stopAll();
+      window.dispatchEvent(
+        new CustomEvent('moco:music-status', {
+          detail: { isPlaying: false, track: null }
+        })
+      );
+    };
   }, []);
 
   const progressPercent = durationSec > 0 ? (currentTimeSec / durationSec) * 100 : 0;
@@ -477,17 +493,15 @@ export default function MusicWidget() {
           )}
 
           {/* Real-Time Bouncing Equalizer Bars */}
-          <div className="music-equalizer">
-            {[10, 20, 14, 26, 12, 22, 16, 24, 8, 18, 14, 25, 18, 22, 12, 16].map(
+          <div className={`music-equalizer ${isPlaying ? 'playing' : 'paused'}`}>
+            {[12, 20, 14, 26, 12, 22, 16, 25, 10, 18, 14, 24, 18, 22, 12, 16].map(
               (h, idx) => (
                 <div
                   key={idx}
-                  className="music-equalizer-bar"
+                  className={`music-equalizer-bar ${isPlaying ? 'playing' : 'paused'}`}
                   style={{
-                    height: isPlaying
-                      ? `${Math.max(4, h * (volume + 0.35))}px`
-                      : '4px',
-                    opacity: isPlaying ? 0.95 : 0.3
+                    height: `${h}px`,
+                    animationDelay: `${(idx * 0.05).toFixed(2)}s`
                   }}
                 />
               )

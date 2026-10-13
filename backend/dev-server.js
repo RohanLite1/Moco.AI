@@ -43,7 +43,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  const parsedUrl = url.parse(req.url, true);
+  const parsedUrl = new URL(req.url, `http://localhost:${PORT}`);
   const pathname = parsedUrl.pathname;
 
   // --- API Endpoints ---
@@ -109,10 +109,10 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // --- Serve Built-in Web Browser Testing Playground ---
+  // --- Serve Full Moco.AI HUD with Voice Audio Integration ---
   if (pathname === '/' || pathname === '/index.html') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end(getTestingHtml());
+    res.end(getHudHtml());
     return;
   }
 
@@ -120,500 +120,1251 @@ const server = http.createServer(async (req, res) => {
   res.end('Not Found');
 });
 
-function getTestingHtml() {
+function getHudHtml() {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Moco.AI - Local Web Testing Playground</title>
+  <title>Moco.AI • Desktop HUD Assistant</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0b0f19;
-      --card-bg: rgba(17, 24, 39, 0.75);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --primary: #06b6d4;
-      --primary-glow: rgba(6, 182, 212, 0.25);
-      --accent: #8b5cf6;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --text: #f3f4f6;
-      --text-muted: #9ca3af;
-      --radius: 16px;
+      --island-bg: rgba(9, 14, 28, 0.88);
+      --island-border: rgba(6, 182, 212, 0.32);
+      --island-border-hover: rgba(6, 182, 212, 0.65);
+      --island-glow: 0 16px 42px rgba(0, 0, 0, 0.75), 0 0 32px rgba(6, 182, 212, 0.22);
+      --island-glow-active: 0 24px 60px rgba(0, 0, 0, 0.9), 0 0 45px rgba(6, 182, 212, 0.4);
+      --island-text: #f8fafc;
+      --island-text-muted: #94a3b8;
+      --island-card-bg: rgba(255, 255, 255, 0.04);
+      --island-card-border: rgba(255, 255, 255, 0.08);
+      --island-waveform: #38bdf8;
+      --island-accent: #06b6d4;
+      --island-accent-purple: #a855f7;
+      --island-accent-emerald: #10b981;
+    }
+
+    .theme-light {
+      --island-bg: rgba(248, 250, 252, 0.92);
+      --island-border: rgba(14, 165, 233, 0.35);
+      --island-border-hover: rgba(14, 165, 233, 0.7);
+      --island-glow: 0 16px 42px rgba(15, 23, 42, 0.16), 0 0 28px rgba(14, 165, 233, 0.2);
+      --island-glow-active: 0 22px 55px rgba(15, 23, 42, 0.24), 0 0 40px rgba(14, 165, 233, 0.3);
+      --island-text: #0f172a;
+      --island-text-muted: #475569;
+      --island-card-bg: rgba(15, 23, 42, 0.04);
+      --island-card-border: rgba(15, 23, 42, 0.08);
+      --island-waveform: #0284c7;
+      --island-accent: #0284c7;
+      --island-accent-purple: #9333ea;
+      --island-accent-emerald: #059669;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background-color: var(--bg);
+      background-color: #030712;
       background-image: 
-        radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.12) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.12) 0px, transparent 50%),
-        radial-gradient(at 50% 50%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
-      color: var(--text);
+        radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.15) 0px, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 55%),
+        radial-gradient(at 50% 50%, rgba(16, 185, 129, 0.06) 0px, transparent 60%);
+      color: var(--island-text);
       font-family: 'Outfit', sans-serif;
       min-height: 100vh;
-      padding: 32px 20px;
+      overflow-x: hidden;
       display: flex;
       flex-direction: column;
       align-items: center;
+      transition: background-color 0.3s;
     }
 
-    .container {
+    /* Screen Viewport */
+    .dynamic-island-viewport {
       width: 100%;
-      max-width: 1000px;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      gap: 24px;
-    }
-
-    header {
-      display: flex;
-      justify-content: space-between;
       align-items: center;
-      padding: 16px 24px;
-      background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      padding-top: 18px;
+      padding-bottom: 30px;
     }
 
-    .brand {
+    /* Core Dynamic Island Shell */
+    .dynamic-island-shell {
+      position: relative;
+      background: var(--island-bg);
+      backdrop-filter: blur(34px);
+      -webkit-backdrop-filter: blur(34px);
+      border: 1px solid var(--island-border);
+      box-shadow: var(--island-glow);
+      transition: all 0.44s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+      user-select: none;
+      color: var(--island-text);
+    }
+
+    /* --- 1. COMPACT PILL MODE --- */
+    .dynamic-island-shell.pill {
+      width: 620px;
+      max-width: 94vw;
+      height: 60px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 14px 6px 8px;
+      cursor: pointer;
+    }
+
+    .dynamic-island-shell.pill:hover {
+      border-color: var(--island-border-hover);
+      box-shadow: var(--island-glow-active);
+      transform: translateY(2px) scale(1.012);
+    }
+
+    .pill-left {
       display: flex;
       align-items: center;
       gap: 12px;
+      height: 100%;
     }
 
-    .avatar-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+    .pill-robot-avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: var(--island-card-bg);
+      border: 1px solid var(--island-border);
+      overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
-      box-shadow: 0 0 20px var(--primary-glow);
+      box-shadow: 0 0 14px rgba(6, 182, 212, 0.3);
+      position: relative;
     }
 
-    .brand-title h1 {
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      background: linear-gradient(90deg, #38bdf8, #c084fc);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+    .pill-meta {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
-    .brand-title p {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .status-badge {
+    .pill-title {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #34d399;
-      padding: 6px 14px;
-      border-radius: 9999px;
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      color: var(--island-text);
     }
 
-    .status-dot {
-      width: 8px;
-      height: 8px;
+    .pill-status-dot {
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
+      background: #06b6d4;
+      box-shadow: 0 0 8px #06b6d4;
+    }
+
+    .pill-status-dot.listening {
+      background: #ef4444;
+      box-shadow: 0 0 12px #ef4444;
+      animation: pulseDot 1s infinite;
+    }
+
+    .pill-status-dot.thinking {
+      background: #a855f7;
+      box-shadow: 0 0 12px #a855f7;
+      animation: pulseDot 1.2s infinite;
+    }
+
+    .pill-status-dot.speaking {
       background: #10b981;
-      box-shadow: 0 0 8px #10b981;
-      animation: pulse 2s infinite;
+      box-shadow: 0 0 12px #10b981;
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.85); }
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.6; }
     }
 
-    /* Voice Interaction Hero Card */
-    .card {
-      background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius);
-      padding: 28px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    .pill-subtitle {
+      font-size: 11px;
+      color: var(--island-text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 170px;
     }
 
-    .card-title {
-      font-size: 17px;
-      font-weight: 600;
-      margin-bottom: 16px;
+    /* Pill Center Waveform Equalizer */
+    .pill-center {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 3.5px;
+      padding: 0 10px;
     }
 
-    .voice-hero {
+    .soundwave-bar {
+      width: 3.5px;
+      background: var(--island-waveform);
+      border-radius: 9999px;
+      height: 6px;
+      transition: height 0.15s ease;
+      box-shadow: 0 0 6px rgba(56, 189, 248, 0.4);
+    }
+
+    .soundwave-bar.active {
+      animation: waveAnim 0.7s ease-in-out infinite alternate;
+    }
+
+    @keyframes waveAnim {
+      0% { height: 6px; }
+      100% { height: 26px; }
+    }
+
+    /* Pill Right Controls */
+    .pill-actions {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      text-align: center;
-      padding: 20px 0;
-      gap: 20px;
+      gap: 8px;
     }
 
-    .mic-button-wrapper {
-      position: relative;
-    }
-
-    .mic-button {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      border: none;
-      background: linear-gradient(135deg, #06b6d4, #3b82f6);
-      color: white;
-      font-size: 38px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 0 35px var(--primary-glow);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      z-index: 2;
-    }
-
-    .mic-button:hover {
-      transform: scale(1.08);
-      box-shadow: 0 0 50px rgba(6, 182, 212, 0.5);
-    }
-
-    .mic-button.listening {
-      background: linear-gradient(135deg, #ef4444, #f97316);
-      box-shadow: 0 0 50px rgba(239, 68, 68, 0.6);
-      animation: pulseMic 1.5s infinite;
-    }
-
-    @keyframes pulseMic {
-      0% { transform: scale(1); box-shadow: 0 0 30px rgba(239, 68, 68, 0.4); }
-      50% { transform: scale(1.1); box-shadow: 0 0 60px rgba(239, 68, 68, 0.8); }
-      100% { transform: scale(1); box-shadow: 0 0 30px rgba(239, 68, 68, 0.4); }
-    }
-
-    .voice-status-text {
-      font-size: 15px;
-      color: var(--text-muted);
-      min-height: 24px;
-    }
-
-    .voice-status-text.active {
-      color: #38bdf8;
-      font-weight: 500;
-    }
-
-    /* Waveform visualizer */
-    .waveform-bar-container {
+    .pill-badge {
       display: flex;
       align-items: center;
       gap: 5px;
-      height: 36px;
+      padding: 4px 8px;
+      border-radius: 9999px;
+      background: var(--island-card-bg);
+      border: 1px solid var(--island-card-border);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--island-text-muted);
     }
 
-    .bar {
-      width: 4px;
-      background: #38bdf8;
-      border-radius: 2px;
-      height: 6px;
-      transition: height 0.1s ease;
-    }
-
-    .bar.animated {
-      animation: soundWave 0.8s ease-in-out infinite alternate;
-    }
-
-    @keyframes soundWave {
-      0% { height: 6px; }
-      100% { height: 32px; }
-    }
-
-    /* Input & Preset Buttons */
-    .input-row {
+    .pill-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--island-card-border);
+      background: var(--island-card-bg);
+      color: var(--island-text);
       display: flex;
-      gap: 10px;
-      width: 100%;
-      margin-top: 10px;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
     }
 
-    input[type="text"] {
+    .pill-btn:hover {
+      background: rgba(6, 182, 212, 0.2);
+      border-color: var(--island-accent);
+      transform: scale(1.08);
+    }
+
+    .pill-btn.mic-active {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #ef4444;
+      color: #ef4444;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.5);
+      animation: pulseMic 1.4s infinite;
+    }
+
+    @keyframes pulseMic {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.12); }
+    }
+
+    /* --- 2. EXPANDED HUD WINDOW --- */
+    .dynamic-island-shell.expanded {
+      width: 960px;
+      max-width: 94vw;
+      height: 640px;
+      border-radius: 28px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--island-glow-active);
+    }
+
+    .island-header {
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--island-card-border);
+      background: rgba(0, 0, 0, 0.15);
+    }
+
+    .island-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.3px;
+    }
+
+    .island-status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      background: var(--island-card-bg);
+      border: 1px solid var(--island-card-border);
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--island-accent);
+    }
+
+    /* Tabs */
+    .island-tabs {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 4px;
+      border-radius: 14px;
+      border: 1px solid var(--island-card-border);
+    }
+
+    .island-tab-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 10px;
+      border: none;
+      background: transparent;
+      color: var(--island-text-muted);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .island-tab-btn:hover {
+      color: var(--island-text);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .island-tab-btn.active {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(139, 92, 246, 0.25));
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      color: #38bdf8;
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+    }
+
+    .island-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .island-control-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid var(--island-card-border);
+      background: var(--island-card-bg);
+      color: var(--island-text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .island-control-btn:hover {
+      color: var(--island-text);
+      border-color: var(--island-accent);
+    }
+
+    .island-control-btn.close:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
+    /* Island Main Deck */
+    .island-main {
       flex: 1;
-      padding: 14px 18px;
-      background: rgba(0, 0, 0, 0.35);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      color: var(--text);
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      overflow: hidden;
+    }
+
+    /* Left: 3D Robot Deck */
+    .island-robot-deck {
+      border-right: 1px solid var(--island-card-border);
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      gap: 14px;
+      background: rgba(0, 0, 0, 0.12);
+    }
+
+    .island-robot-stage {
+      flex: 1;
+      border-radius: 18px;
+      background: radial-gradient(circle at center, rgba(6, 182, 212, 0.08) 0%, rgba(0,0,0,0.4) 80%);
+      border: 1px solid var(--island-card-border);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    #robotCanvas {
+      width: 250px;
+      height: 250px;
+    }
+
+    .robot-overlay-badge {
+      position: absolute;
+      bottom: 12px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.1);
+      font-size: 11px;
+      font-weight: 600;
+      color: #38bdf8;
+      backdrop-filter: blur(8px);
+    }
+
+    /* Expressions */
+    .island-expression-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .expression-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+      color: var(--island-text-muted);
+    }
+
+    .expression-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+    }
+
+    .expression-btn {
+      padding: 6px 2px;
+      border-radius: 8px;
+      border: 1px solid var(--island-card-border);
+      background: var(--island-card-bg);
+      color: var(--island-text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.2s;
+    }
+
+    .expression-btn:hover {
+      color: var(--island-text);
+      border-color: var(--island-accent);
+    }
+
+    .expression-btn.active {
+      background: rgba(6, 182, 212, 0.2);
+      border-color: var(--island-accent);
+      color: #38bdf8;
+    }
+
+    /* Right: Active Widget Body */
+    .island-widget-body {
+      padding: 18px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* HUD Widgets Common */
+    .widget-container {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .widget-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .widget-title {
       font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--island-text);
+    }
+
+    .widget-badge {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--island-accent);
+      background: rgba(6, 182, 212, 0.12);
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(6, 182, 212, 0.25);
+    }
+
+    /* Chat Widget */
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 6px;
+      min-height: 400px;
+      max-height: 460px;
+    }
+
+    .message {
+      padding: 12px 16px;
+      border-radius: 16px;
+      max-width: 82%;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.assistant {
+      align-self: flex-start;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--island-card-border);
+      color: var(--island-text);
+      border-bottom-left-radius: 4px;
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 6px 8px 6px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--island-card-border);
+    }
+
+    .chat-input-row input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--island-text);
+      font-size: 14px;
       font-family: inherit;
       outline: none;
-      transition: border-color 0.2s;
     }
 
-    input[type="text"]:focus {
-      border-color: var(--primary);
-    }
-
-    .btn {
-      padding: 14px 24px;
-      border-radius: 12px;
+    .chat-send-btn {
+      padding: 8px 16px;
+      border-radius: 10px;
       border: none;
       background: linear-gradient(135deg, #06b6d4, #3b82f6);
       color: white;
       font-weight: 600;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .btn:hover {
-      opacity: 0.9;
-      transform: translateY(-1px);
-    }
-
-    .preset-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-      margin-top: 8px;
-    }
-
-    .chip {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--card-border);
-      color: var(--text-muted);
-      padding: 8px 14px;
-      border-radius: 9999px;
       font-size: 13px;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Pomodoro Widget */
+    .pomodoro-card {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .pomo-time-display {
+      font-size: 72px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: -2px;
+      color: #38bdf8;
+      text-shadow: 0 0 30px rgba(56, 189, 248, 0.4);
+    }
+
+    .pomo-modes {
+      display: flex;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--island-card-border);
+    }
+
+    .pomo-mode-btn {
+      padding: 6px 16px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--island-text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .pomo-mode-btn.active {
+      background: var(--island-accent);
+      color: #030712;
+      box-shadow: 0 0 14px rgba(6, 182, 212, 0.4);
+    }
+
+    .pomo-controls {
+      display: flex;
+      gap: 12px;
+    }
+
+    .pomo-action-btn {
+      padding: 12px 28px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, #06b6d4, #3b82f6);
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
       transition: all 0.2s;
     }
 
-    .chip:hover {
-      background: rgba(6, 182, 212, 0.15);
-      color: #38bdf8;
-      border-color: rgba(6, 182, 212, 0.3);
+    .pomo-action-btn.reset {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--island-text);
+      border: 1px solid var(--island-card-border);
     }
 
-    /* Response Result Card */
-    .result-box {
-      margin-top: 20px;
-      padding: 20px;
-      background: rgba(0, 0, 0, 0.4);
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      display: none;
-      flex-direction: column;
-      gap: 12px;
-      text-align: left;
-    }
-
-    .result-box.show {
+    /* Todo Widget */
+    .todo-list {
+      flex: 1;
+      overflow-y: auto;
       display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 440px;
     }
 
-    .result-header {
+    .todo-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: var(--island-card-bg);
+      border: 1px solid var(--island-card-border);
+      transition: all 0.2s;
+    }
+
+    .todo-item.completed {
+      opacity: 0.5;
+      text-decoration: line-through;
+    }
+
+    .todo-left {
       display: flex;
       align-items: center;
       gap: 10px;
+      cursor: pointer;
     }
 
-    .badge {
-      padding: 4px 10px;
+    .todo-checkbox {
+      width: 18px;
+      height: 18px;
       border-radius: 6px;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .badge-navigate { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-    .badge-calculate { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
-    .badge-translate { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-    .badge-chat { background: rgba(139, 92, 246, 0.2); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3); }
-
-    .result-reply {
-      font-size: 16px;
-      line-height: 1.5;
-      color: #f3f4f6;
-    }
-
-    .result-latency {
-      font-size: 12px;
-      color: var(--text-muted);
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    /* Tool Tabs Grid */
-    .grid-tabs {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
-    }
-
-    .mini-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius);
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .mini-card h3 {
-      font-size: 15px;
-      font-weight: 600;
-      color: #38bdf8;
+      border: 2px solid var(--island-accent);
       display: flex;
       align-items: center;
-      gap: 8px;
-    }
-
-    .mini-card p {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .mini-card button {
-      margin-top: auto;
-      padding: 10px;
-      border-radius: 8px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid var(--card-border);
-      color: var(--text);
-      font-weight: 500;
-      font-size: 13px;
+      justify-content: center;
       cursor: pointer;
-      transition: all 0.2s;
     }
 
-    .mini-card button:hover {
+    .todo-item.completed .todo-checkbox {
+      background: var(--island-accent);
+    }
+
+    /* Music Widget */
+    .music-player-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .music-disc {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #0284c7 0%, #090e1c 70%);
+      border: 3px solid rgba(56, 189, 248, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 35px rgba(56, 189, 248, 0.3);
+    }
+
+    .music-disc.playing {
+      animation: spin 6s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Games Widget */
+    .games-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      height: 100%;
+    }
+
+    .game-card {
+      border-radius: 16px;
+      border: 1px solid var(--island-card-border);
+      background: var(--island-card-bg);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      text-align: center;
+    }
+
+    .game-icon {
+      font-size: 38px;
+    }
+
+    /* Floating Voice Toast Notification */
+    .voice-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(9, 14, 28, 0.94);
+      border: 1px solid var(--island-accent);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(6, 182, 212, 0.4);
+      padding: 12px 24px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      backdrop-filter: blur(20px);
+      z-index: 99999;
+      opacity: 0;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+
+    .voice-toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .voice-toast-badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
       background: rgba(6, 182, 212, 0.2);
-      border-color: var(--primary);
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .voice-toast-text {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--island-text);
     }
   </style>
 </head>
-<body>
-  <div class="container">
-    <header>
-      <div class="brand">
-        <div class="avatar-icon">🐕</div>
-        <div class="brand-title">
-          <h1>Moco.AI Live Local Tester</h1>
-          <p>Zero Build Wait • Instant Microphone & Local LLM Runner</p>
-        </div>
-      </div>
-      <div class="status-badge" id="backendStatus">
-        <span class="status-dot"></span>
-        <span id="statusLabel">Local Backend Online</span>
-      </div>
-    </header>
-
-    <!-- Main Voice Testing Card -->
-    <div class="card">
-      <div class="card-title">
-        <span>🎙️ Live Autonomous Voice Command Tester</span>
-        <span style="font-size: 12px; color: var(--text-muted);">Web Speech API + Ollama Local Agent</span>
-      </div>
-
-      <div class="voice-hero">
-        <div class="mic-button-wrapper">
-          <button id="micBtn" class="mic-button" title="Click to Speak">🎤</button>
+<body class="theme-dark">
+  <div class="dynamic-island-viewport">
+    
+    <!-- Dynamic Island Shell -->
+    <div id="dynamicIsland" class="dynamic-island-shell pill">
+      
+      <!-- ================= 1. COLLAPSED PILL VIEW ================= -->
+      <div id="pillView" style="display: flex; width: 100%; align-items: center; justify-content: space-between;">
+        
+        <!-- Left: RoboDog Face Canvas & Status -->
+        <div class="pill-left">
+          <div class="pill-robot-avatar">
+            <canvas id="pillCanvas" width="46" height="46"></canvas>
+          </div>
+          <div class="pill-meta">
+            <div class="pill-title">
+              <span id="pillDot" class="pill-status-dot"></span>
+              <span>Moco Robodog</span>
+            </div>
+            <div id="pillSubtitle" class="pill-subtitle">AIBO_UNIT_01 • Click to expand</div>
+          </div>
         </div>
 
-        <div class="waveform-bar-container" id="equalizer">
-          ${Array.from({length: 16}).map((_, i) => `<div class="bar" style="animation-delay: ${i * 0.06}s"></div>`).join('')}
+        <!-- Middle: Equalizer Waveform -->
+        <div class="pill-center" title="Audio Waveform Equalizer">
+          ${Array.from({length: 12}).map((_, i) => `<div class="soundwave-bar" id="wave${i}"></div>`).join('')}
         </div>
 
-        <div id="voiceStatus" class="voice-status-text">Click the microphone to speak, or type below</div>
+        <!-- Right: Telemetry & Controls -->
+        <div class="pill-actions">
+          <div class="pill-badge" title="Battery 98%">
+            <span style="color: #38bdf8;">⚡</span>
+            <span>98%</span>
+          </div>
 
-        <!-- Presets for fast testing without speaking -->
-        <div class="preset-chips">
-          <button class="chip" onclick="testPreset('open pomodoro')">⏱️ Open Pomodoro</button>
-          <button class="chip" onclick="testPreset('start pomodoro')">⏱️ Start Pomodoro</button>
-          <button class="chip" onclick="testPreset('open my tasks')">📋 Open My Tasks</button>
-          <button class="chip" onclick="testPreset('play some music')">🎵 Play Some Music</button>
-          <button class="chip" onclick="testPreset('play chess')">♟️ Play Chess</button>
-          <button class="chip" onclick="testPreset('what is 45 plus 55')">🧮 45 plus 55</button>
-          <button class="chip" onclick="testPreset('calculate sin(pi / 2) + 2^3')">📐 sin(pi/2) + 2^3</button>
-          <button class="chip" onclick="testPreset('translate hello to Spanish')">🌐 Hello to Spanish</button>
-          <button class="chip" onclick="testPreset('tell me a funny joke')">💬 Tell me a joke</button>
-          <button class="chip" onclick="testPreset('who are you')">🤖 Who are you?</button>
-        </div>
+          <button id="themeToggleBtn" class="pill-btn" title="Toggle Dark/Light Theme">
+            🌓
+          </button>
 
-        <!-- Input row -->
-        <div class="input-row">
-          <input type="text" id="commandInput" placeholder="Or type a voice command and press Enter..." />
-          <button class="btn" id="sendBtn">Send Command</button>
+          <!-- Voice Mic Toggle Button -->
+          <button id="pillMicBtn" class="pill-btn" title="Voice Command Mic">
+            🎙️
+          </button>
+
+          <button id="pillExpandBtn" class="pill-btn" title="Expand HUD">
+            ⌄
+          </button>
         </div>
       </div>
 
-      <!-- Result Display -->
-      <div class="result-box" id="resultBox">
-        <div class="result-header">
-          <span class="badge" id="actionBadge">ACTION</span>
-          <span class="badge" id="targetBadge" style="display:none;">TARGET</span>
-          <span class="result-latency" id="latencyLabel">⚡ 0 ms</span>
+      <!-- ================= 2. EXPANDED HUD VIEW ================= -->
+      <div id="expandedView" style="display: none; width: 100%; height: 100%; flex-direction: column;">
+        
+        <!-- Top HUD Header -->
+        <header class="island-header">
+          <div class="island-brand">
+            <span style="color: #06b6d4;">✨</span>
+            <span>Moco.AI</span>
+            <div class="island-status-pill">
+              <span id="headerDot" class="pill-status-dot"></span>
+              <span id="headerStatusText">IDLE</span>
+            </div>
+          </div>
+
+          <!-- Navigation Tabs -->
+          <nav class="island-tabs">
+            <button class="island-tab-btn active" data-tab="chat">💬 AI Assistant</button>
+            <button class="island-tab-btn" data-tab="pomodoro">⏱️ Pomodoro</button>
+            <button class="island-tab-btn" data-tab="todo">📋 Tasks</button>
+            <button class="island-tab-btn" data-tab="music">🎵 Music</button>
+            <button class="island-tab-btn" data-tab="games">🎮 Games</button>
+            <button class="island-tab-btn" data-tab="calc">🧮 Calculator</button>
+          </nav>
+
+          <!-- Action Controls -->
+          <div class="island-controls">
+            <button id="headerMicBtn" class="island-control-btn" title="Voice Command Mic">
+              🎙️
+            </button>
+            <button id="headerThemeBtn" class="island-control-btn" title="Theme Toggle">
+              🌓
+            </button>
+            <button id="minimizeBtn" class="island-control-btn" title="Collapse to Pill">
+              ─
+            </button>
+          </div>
+        </header>
+
+        <!-- Main Body -->
+        <div class="island-main">
+          
+          <!-- Left: 3D Hologram Stage & Expressions -->
+          <aside class="island-robot-deck">
+            <div class="island-robot-stage" id="robotStage" title="Click Moco to interact!">
+              <canvas id="robotCanvas" width="250" height="250"></canvas>
+              <div class="robot-overlay-badge" id="robotExpressionLabel">ROBO_DOG • IDLE</div>
+            </div>
+
+            <div class="island-expression-bar">
+              <div class="expression-title">Command Expressions</div>
+              <div class="expression-grid">
+                <button class="expression-btn active" onclick="setAiStatus('idle')">📻 Idle</button>
+                <button class="expression-btn" onclick="startVoiceRecognition()">🎙️ Listen</button>
+                <button class="expression-btn" onclick="setAiStatus('thinking')">🧠 Think</button>
+                <button class="expression-btn" onclick="setAiStatus('speaking')">🔊 Speak</button>
+                <button class="expression-btn" onclick="setAiStatus('happy')">🐾 Happy</button>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Right: Widget Body -->
+          <main class="island-widget-body">
+            
+            <!-- Tab 1: AI Assistant Chat -->
+            <div id="widget-chat" class="widget-container">
+              <div class="widget-header">
+                <div class="widget-title">🤖 Local Gemma Assistant</div>
+                <div class="widget-badge">100% Offline AI</div>
+              </div>
+
+              <div class="chat-messages" id="chatFeed">
+                <div class="message assistant">
+                  Hello! I'm Moco, your desktop AI HUD companion. I listen to voice commands like <b>"Open pomodoro"</b>, <b>"Open tasks"</b>, <b>"Play chess"</b>, or <b>"What is 45 plus 55"</b>. Click the microphone or speak anytime!
+                </div>
+              </div>
+
+              <form class="chat-input-row" id="chatForm">
+                <input type="text" id="chatInput" placeholder="Ask Moco or speak a voice command..." />
+                <button type="submit" class="chat-send-btn">Send</button>
+              </form>
+            </div>
+
+            <!-- Tab 2: Pomodoro Focus -->
+            <div id="widget-pomodoro" class="widget-container" style="display: none;">
+              <div class="widget-header">
+                <div class="widget-title">⏱️ Pomodoro Focus Timer</div>
+                <div class="widget-badge" id="pomoSessionCount">Session #1</div>
+              </div>
+
+              <div class="pomodoro-card">
+                <div class="pomo-modes">
+                  <button class="pomo-mode-btn active" onclick="setPomoMode('work')">Focus (25m)</button>
+                  <button class="pomo-mode-btn" onclick="setPomoMode('break')">Short Break (5m)</button>
+                </div>
+
+                <div class="pomo-time-display" id="pomoTime">25:00</div>
+
+                <div class="pomo-controls">
+                  <button class="pomo-action-btn" id="pomoToggleBtn" onclick="togglePomodoro()">Start Focus</button>
+                  <button class="pomo-action-btn reset" onclick="resetPomodoro()">Reset</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 3: Tasks / Todo Queue -->
+            <div id="widget-todo" class="widget-container" style="display: none;">
+              <div class="widget-header">
+                <div class="widget-title">📋 Task Queue</div>
+                <div class="widget-badge" id="todoCounter">1/3 Completed</div>
+              </div>
+
+              <div class="todo-list" id="todoList">
+                <!-- Rendered dynamically -->
+              </div>
+
+              <form class="chat-input-row" id="todoForm">
+                <input type="text" id="todoInput" placeholder="Add a new task to queue..." />
+                <button type="submit" class="chat-send-btn">+ Add Task</button>
+              </form>
+            </div>
+
+            <!-- Tab 4: Ambient Waves Music -->
+            <div id="widget-music" class="widget-container" style="display: none;">
+              <div class="widget-header">
+                <div class="widget-title">🎵 Ambient Waves Player</div>
+                <div class="widget-badge">Lo-Fi Cyberpunk</div>
+              </div>
+
+              <div class="music-player-box">
+                <div class="music-disc" id="musicDisc">
+                  <span style="font-size: 40px;">🎧</span>
+                </div>
+
+                <div style="text-align: center;">
+                  <div style="font-weight: 700; font-size: 16px;">Midnight Coding Session</div>
+                  <div style="font-size: 12px; color: var(--island-text-muted);">Moco Ambient Cyber Soundscapes</div>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                  <button class="pomo-action-btn" id="musicPlayBtn" onclick="toggleMusic()">▶ Play Audio</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 5: Arcade Games -->
+            <div id="widget-games" class="widget-container" style="display: none;">
+              <div class="widget-header">
+                <div class="widget-title">🎮 Arcade Mini Games</div>
+                <div class="widget-badge">Local Engines</div>
+              </div>
+
+              <div class="games-grid">
+                <div class="game-card">
+                  <div class="game-icon">♟️</div>
+                  <div style="font-weight: 700;">Minimax Chess</div>
+                  <div style="font-size: 12px; color: var(--island-text-muted);">8x8 move validation vs AI bot</div>
+                  <button class="pomo-action-btn reset" onclick="testVoiceCommand('play chess')">Launch Chess</button>
+                </div>
+
+                <div class="game-card">
+                  <div class="game-icon">🐍</div>
+                  <div style="font-weight: 700;">Retro Snake</div>
+                  <div style="font-size: 12px; color: var(--island-text-muted);">Classic grid snake game loop</div>
+                  <button class="pomo-action-btn reset" onclick="alert('Snake engine active!')">Launch Snake</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 6: Scientific Calculator & Grapher -->
+            <div id="widget-calc" class="widget-container" style="display: none;">
+              <div class="widget-header">
+                <div class="widget-title">🧮 Math & Desmos Plotter</div>
+                <div class="widget-badge">Math Evaluator</div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <form class="chat-input-row" id="calcForm">
+                  <input type="text" id="calcInput" value="sin(x) * 3" placeholder="Enter equation e.g. x^2 - 4 or sin(x)" />
+                  <button type="submit" class="chat-send-btn">Plot f(x)</button>
+                </form>
+
+                <canvas id="graphCanvas" width="600" height="260" style="background: rgba(0,0,0,0.4); border-radius: 12px; border: 1px solid var(--island-card-border);"></canvas>
+                <div id="calcResult" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #38bdf8;">Roots f(x)=0: Detected</div>
+              </div>
+            </div>
+
+          </main>
         </div>
-        <div class="result-reply" id="replyText"></div>
-      </div>
-    </div>
-
-    <!-- Other Backend Feature Modules -->
-    <div class="grid-tabs">
-      <div class="mini-card">
-        <h3>📐 Math & Desmos Plotter</h3>
-        <p>Safely parses complex expressions, trigonometry, roots, and sample points.</p>
-        <button onclick="testPreset('calculate sqrt(144) + 5^3')">Test Math (sqrt(144) + 5^3)</button>
-      </div>
-
-      <div class="mini-card">
-        <h3>♟️ Minimax Chess Engine</h3>
-        <p>Full 8x8 move validation, turn switching, and depth-1 AI bot opponent.</p>
-        <button onclick="testPreset('play chess')">Trigger Games Arcade</button>
-      </div>
-
-      <div class="mini-card">
-        <h3>🌍 Ollama Translation</h3>
-        <p>Fast offline translation powered by local Gemma 3.</p>
-        <button onclick="testPreset('translate Good luck with the hackathon into French')">Test French Translation</button>
       </div>
     </div>
   </div>
 
-  <script>
-    const micBtn = document.getElementById('micBtn');
-    const voiceStatus = document.getElementById('voiceStatus');
-    const commandInput = document.getElementById('commandInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const resultBox = document.getElementById('resultBox');
-    const actionBadge = document.getElementById('actionBadge');
-    const targetBadge = document.getElementById('targetBadge');
-    const replyText = document.getElementById('replyText');
-    const latencyLabel = document.getElementById('latencyLabel');
-    const bars = document.querySelectorAll('.bar');
+  <!-- Voice Toast Notification -->
+  <div id="voiceToast" class="voice-toast">
+    <span class="voice-toast-badge" id="toastBadge">ACTION</span>
+    <span class="voice-toast-text" id="toastText">Voice command processed</span>
+  </div>
 
+  <script>
+    // --- State Variables ---
+    let isExpanded = false;
+    let aiStatus = 'idle'; // 'idle' | 'listening' | 'thinking' | 'speaking' | 'happy'
+    let activeTab = 'chat';
+    let isDark = true;
     let recognition = null;
     let isListening = false;
 
-    // Initialize Web Speech API for Chrome / Edge
+    // --- DOM Elements ---
+    const island = document.getElementById('dynamicIsland');
+    const pillView = document.getElementById('pillView');
+    const expandedView = document.getElementById('expandedView');
+    const pillSubtitle = document.getElementById('pillSubtitle');
+    const pillDot = document.getElementById('pillDot');
+    const headerDot = document.getElementById('headerDot');
+    const headerStatusText = document.getElementById('headerStatusText');
+    const pillMicBtn = document.getElementById('pillMicBtn');
+    const headerMicBtn = document.getElementById('headerMicBtn');
+    const voiceToast = document.getElementById('voiceToast');
+    const toastBadge = document.getElementById('toastBadge');
+    const toastText = document.getElementById('toastText');
+    const chatFeed = document.getElementById('chatFeed');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+
+    // --- Expand / Collapse Handlers ---
+    island.addEventListener('click', (e) => {
+      if (!isExpanded && !e.target.closest('button')) {
+        expandHud();
+      }
+    });
+
+    document.getElementById('pillExpandBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      expandHud();
+    });
+
+    document.getElementById('minimizeBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      collapseHud();
+    });
+
+    function expandHud() {
+      isExpanded = true;
+      island.classList.remove('pill');
+      island.classList.add('expanded');
+      pillView.style.display = 'none';
+      expandedView.style.display = 'flex';
+      drawRobotFace('robotCanvas', aiStatus);
+    }
+
+    function collapseHud() {
+      isExpanded = false;
+      island.classList.remove('expanded');
+      island.classList.add('pill');
+      expandedView.style.display = 'none';
+      pillView.style.display = 'flex';
+      drawRobotFace('pillCanvas', aiStatus);
+    }
+
+    // --- Tab Switching ---
+    document.querySelectorAll('.island-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        switchTab(btn.dataset.tab);
+      });
+    });
+
+    function switchTab(tabId) {
+      activeTab = tabId;
+      document.querySelectorAll('.island-tab-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.tab === tabId);
+      });
+      document.querySelectorAll('.widget-container').forEach(w => {
+        w.style.display = 'none';
+      });
+      const targetWidget = document.getElementById('widget-' + tabId);
+      if (targetWidget) targetWidget.style.display = 'flex';
+
+      if (tabId === 'calc') {
+        plotGraph('sin(x) * 3');
+      }
+    }
+
+    // --- Theme Toggle ---
+    function toggleTheme() {
+      isDark = !isDark;
+      document.body.className = isDark ? 'theme-dark' : 'theme-light';
+    }
+    document.getElementById('themeToggleBtn').addEventListener('click', (e) => { e.stopPropagation(); toggleTheme(); });
+    document.getElementById('headerThemeBtn').addEventListener('click', toggleTheme);
+
+    // --- 3D Procedural RoboDog OLED Avatar Face ---
+    function drawRobotFace(canvasId, status) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Dark background visor
+      ctx.fillStyle = '#050b14';
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, w / 2 - 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Glowing outer rim
+      ctx.strokeStyle = status === 'listening' ? '#ef4444' : status === 'thinking' ? '#a855f7' : status === 'speaking' ? '#10b981' : '#06b6d4';
+      ctx.lineWidth = w > 100 ? 4 : 2;
+      ctx.stroke();
+
+      // Eye Colors based on status
+      let coreColor = '#e0f2fe';
+      let midColor = '#38bdf8';
+      let outerColor = '#0284c7';
+
+      if (status === 'thinking') {
+        coreColor = '#f3e8ff'; midColor = '#c084fc'; outerColor = '#7e22ce';
+      } else if (status === 'listening') {
+        coreColor = '#fee2e2'; midColor = '#f87171'; outerColor = '#dc2626';
+      } else if (status === 'speaking' || status === 'happy') {
+        coreColor = '#ecfdf5'; midColor = '#34d399'; outerColor = '#059669';
+      }
+
+      // Draw Left Eye
+      const eyeR = w * 0.18;
+      const leftX = w * 0.32;
+      const rightX = w * 0.68;
+      const eyeY = h * 0.45;
+
+      [leftX, rightX].forEach(cx => {
+        const grad = ctx.createRadialGradient(cx, eyeY, eyeR * 0.1, cx, eyeY, eyeR);
+        grad.addColorStop(0, coreColor);
+        grad.addColorStop(0.4, midColor);
+        grad.addColorStop(1, outerColor);
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        if (status === 'happy') {
+          // Curved happy eye
+          ctx.arc(cx, eyeY + 4, eyeR, Math.PI, Math.PI * 2);
+        } else {
+          ctx.arc(cx, eyeY, eyeR, 0, Math.PI * 2);
+        }
+        ctx.fill();
+
+        // High-tech pupil highlight
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(cx - eyeR * 0.3, eyeY - eyeR * 0.3, eyeR * 0.25, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Mouth / Jaw
+      ctx.strokeStyle = midColor;
+      ctx.lineWidth = w > 100 ? 3 : 1.5;
+      ctx.beginPath();
+      if (status === 'speaking') {
+        ctx.arc(w / 2, h * 0.72, w * 0.12, 0, Math.PI);
+      } else if (status === 'happy') {
+        ctx.arc(w / 2, h * 0.70, w * 0.14, 0, Math.PI);
+      } else {
+        ctx.moveTo(w * 0.42, h * 0.75);
+        ctx.lineTo(w * 0.58, h * 0.75);
+      }
+      ctx.stroke();
+    }
+
+    function setAiStatus(status) {
+      aiStatus = status;
+      pillDot.className = 'pill-status-dot ' + status;
+      headerDot.className = 'pill-status-dot ' + status;
+      headerStatusText.textContent = status.toUpperCase();
+      document.getElementById('robotExpressionLabel').textContent = 'ROBO_DOG • ' + status.toUpperCase();
+
+      drawRobotFace('pillCanvas', status);
+      drawRobotFace('robotCanvas', status);
+
+      // Animate waveform bars if speaking or listening
+      const bars = document.querySelectorAll('.soundwave-bar');
+      bars.forEach(b => {
+        if (status === 'speaking' || status === 'listening') {
+          b.classList.add('active');
+        } else {
+          b.classList.remove('active');
+        }
+      });
+    }
+
+    // Initial render of robot faces
+    drawRobotFace('pillCanvas', 'idle');
+    drawRobotFace('robotCanvas', 'idle');
+
+    // Click on robot in stage makes him happy
+    document.getElementById('robotStage').addEventListener('click', () => {
+      setAiStatus('happy');
+      showToast('HAPPY', 'Moco wagged tail! Happy to see you.');
+      setTimeout(() => setAiStatus('idle'), 2500);
+    });
+
+    // --- Web Speech API Voice Recognition ---
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (SpeechRecognition) {
@@ -624,10 +1375,10 @@ function getTestingHtml() {
 
       recognition.onstart = () => {
         isListening = true;
-        micBtn.classList.add('listening');
-        voiceStatus.textContent = 'Listening to your microphone... Speak now!';
-        voiceStatus.classList.add('active');
-        bars.forEach(b => b.classList.add('animated'));
+        setAiStatus('listening');
+        pillMicBtn.classList.add('mic-active');
+        headerMicBtn.classList.add('mic-active');
+        pillSubtitle.textContent = 'Listening to voice command...';
       };
 
       recognition.onresult = (event) => {
@@ -635,109 +1386,299 @@ function getTestingHtml() {
         for (let i = event.resultIndex; i < event.results.length; i++) {
           transcript += event.results[i][0].transcript;
         }
-        commandInput.value = transcript;
-        voiceStatus.textContent = 'Hearing: "' + transcript + '"';
+        pillSubtitle.textContent = 'Hearing: "' + transcript + '"';
       };
 
-      recognition.onerror = (event) => {
-        console.warn('Speech recognition error:', event.error);
-        voiceStatus.textContent = 'Speech note: ' + event.error + ' (You can also type above)';
+      recognition.onerror = (e) => {
+        console.warn('Speech error:', e.error);
         stopListening();
       };
 
       recognition.onend = () => {
         stopListening();
-        if (commandInput.value.trim()) {
-          executeCommand(commandInput.value.trim());
+        const cmd = pillSubtitle.textContent.replace('Hearing: "', '').replace('"', '').trim();
+        if (cmd && !cmd.startsWith('AIBO_UNIT')) {
+          handleVoiceCommand(cmd);
         }
       };
-    } else {
-      voiceStatus.textContent = 'Web Speech not supported in this browser. You can type commands above!';
     }
 
-    function toggleListening() {
+    function startVoiceRecognition() {
       if (!recognition) {
-        alert('Web Speech API is not available in this browser. Please use Chrome or Edge, or type in the input box.');
+        alert('Web Speech API is not supported in this browser. Please use Chrome or Edge.');
         return;
       }
       if (isListening) {
         recognition.stop();
       } else {
-        commandInput.value = '';
         recognition.start();
       }
     }
 
     function stopListening() {
       isListening = false;
-      micBtn.classList.remove('listening');
-      bars.forEach(b => b.classList.remove('animated'));
-      voiceStatus.classList.remove('active');
+      pillMicBtn.classList.remove('mic-active');
+      headerMicBtn.classList.remove('mic-active');
+      setAiStatus('idle');
+      pillSubtitle.textContent = 'AIBO_UNIT_01 • Click to expand';
     }
 
-    micBtn.addEventListener('click', toggleListening);
+    pillMicBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      startVoiceRecognition();
+    });
 
-    async function executeCommand(cmd) {
-      if (!cmd) return;
-      voiceStatus.textContent = 'Processing command: "' + cmd + '"...';
-      voiceStatus.classList.add('active');
+    headerMicBtn.addEventListener('click', () => {
+      startVoiceRecognition();
+    });
+
+    // --- Execute Voice Command via Backend ---
+    async function handleVoiceCommand(command) {
+      setAiStatus('thinking');
+      showToast('THINKING', 'Routing command: "' + command + '"');
 
       try {
         const res = await fetch('/api/voice', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ command: cmd })
+          body: JSON.stringify({ command })
         });
         const data = await res.json();
-        renderResult(data);
-        voiceStatus.textContent = 'Done! Action: ' + data.action + (data.target ? ' -> ' + data.target : '');
-      } catch (err) {
-        alert('Error communicating with local backend: ' + err.message);
-        voiceStatus.textContent = 'Error: ' + err.message;
-      }
-    }
 
-    function renderResult(data) {
-      resultBox.classList.add('show');
-      actionBadge.textContent = data.action || 'RESPONSE';
-      actionBadge.className = 'badge badge-' + (data.action || 'chat').toLowerCase();
-
-      if (data.target) {
-        targetBadge.style.display = 'inline-block';
-        targetBadge.textContent = 'TARGET: ' + data.target.toUpperCase();
-        targetBadge.className = 'badge badge-navigate';
-      } else {
-        targetBadge.style.display = 'none';
-      }
-
-      latencyLabel.textContent = '⚡ ' + (data.latencyMs ?? 0) + ' ms';
-      replyText.textContent = data.reply || '(No reply text)';
-    }
-
-    function testPreset(cmd) {
-      commandInput.value = cmd;
-      executeCommand(cmd);
-    }
-
-    sendBtn.addEventListener('click', () => {
-      executeCommand(commandInput.value.trim());
-    });
-
-    commandInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        executeCommand(commandInput.value.trim());
-      }
-    });
-
-    // Initial check of backend health
-    fetch('/api/health')
-      .then(r => r.json())
-      .then(d => {
-        if (d.ollama && d.ollama.online) {
-          document.getElementById('statusLabel').textContent = 'Ollama & Backend Ready (' + d.ollama.models.length + ' models)';
+        // 1. If Navigation, immediately switch HUD tab!
+        if (data.action === 'NAVIGATE' && data.target) {
+          switchTab(data.target);
+          showToast('NAVIGATE', data.reply);
+          setAiStatus('happy');
+          setTimeout(() => setAiStatus('idle'), 2000);
+          return;
         }
+
+        // 2. If Calculation, switch to calculator or post in chat!
+        if (data.action === 'CALCULATE') {
+          switchTab('calc');
+          document.getElementById('calcResult').textContent = 'Result: ' + data.result;
+          showToast('CALCULATE', data.reply);
+          setAiStatus('speaking');
+          setTimeout(() => setAiStatus('idle'), 2500);
+          return;
+        }
+
+        // 3. If Chat or general, display in AI chat and speak!
+        switchTab('chat');
+        appendMessage('user', command);
+        appendMessage('assistant', data.reply);
+        showToast('MOCO AI', data.reply);
+        setAiStatus('speaking');
+        setTimeout(() => setAiStatus('idle'), 3000);
+
+      } catch (err) {
+        showToast('ERROR', err.message);
+        setAiStatus('idle');
+      }
+    }
+
+    function testVoiceCommand(cmd) {
+      handleVoiceCommand(cmd);
+    }
+
+    function showToast(badge, text) {
+      toastBadge.textContent = badge;
+      toastText.textContent = text;
+      voiceToast.classList.add('show');
+      setTimeout(() => voiceToast.classList.remove('show'), 3500);
+    }
+
+    // --- Chat Form Submission ---
+    chatForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = chatInput.value.trim();
+      if (!text) return;
+      chatInput.value = '';
+
+      appendMessage('user', text);
+      handleVoiceCommand(text);
+    });
+
+    function appendMessage(role, text) {
+      const msg = document.createElement('div');
+      msg.className = 'message ' + role;
+      msg.textContent = text;
+      chatFeed.appendChild(msg);
+      chatFeed.scrollTop = chatFeed.scrollHeight;
+    }
+
+    // --- Pomodoro Logic ---
+    let pomoSeconds = 25 * 60;
+    let pomoRunning = false;
+    let pomoTimer = null;
+
+    function setPomoMode(mode) {
+      pomoRunning = false;
+      clearInterval(pomoTimer);
+      pomoSeconds = mode === 'work' ? 25 * 60 : 5 * 60;
+      updatePomoDisplay();
+      document.querySelectorAll('.pomo-mode-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent.toLowerCase().includes(mode));
+      });
+      document.getElementById('pomoToggleBtn').textContent = 'Start Focus';
+    }
+
+    function updatePomoDisplay() {
+      const m = Math.floor(pomoSeconds / 60);
+      const s = pomoSeconds % 60;
+      document.getElementById('pomoTime').textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+
+    function togglePomodoro() {
+      pomoRunning = !pomoRunning;
+      if (pomoRunning) {
+        document.getElementById('pomoToggleBtn').textContent = 'Pause';
+        pomoTimer = setInterval(() => {
+          if (pomoSeconds > 0) {
+            pomoSeconds--;
+            updatePomoDisplay();
+          } else {
+            clearInterval(pomoTimer);
+            pomoRunning = false;
+            showToast('POMODORO', 'Session complete! Take a break.');
+            document.getElementById('pomoToggleBtn').textContent = 'Start Focus';
+          }
+        }, 1000);
+      } else {
+        clearInterval(pomoTimer);
+        document.getElementById('pomoToggleBtn').textContent = 'Resume';
+      }
+    }
+
+    function resetPomodoro() {
+      clearInterval(pomoTimer);
+      pomoRunning = false;
+      pomoSeconds = 25 * 60;
+      updatePomoDisplay();
+      document.getElementById('pomoToggleBtn').textContent = 'Start Focus';
+    }
+
+    // --- Todo Queue Logic ---
+    let todos = [
+      { id: 1, text: 'Design 3D hologram shader', done: true },
+      { id: 2, text: 'Hook voice commands to HUD tabs', done: true },
+      { id: 3, text: 'Test local Ollama Gemma integration', done: false }
+    ];
+
+    function renderTodos() {
+      const list = document.getElementById('todoList');
+      list.innerHTML = '';
+      todos.forEach(t => {
+        const item = document.createElement('div');
+        item.className = 'todo-item' + (t.done ? ' completed' : '');
+        item.innerHTML = \`
+          <div class="todo-left" onclick="toggleTodo(\${t.id})">
+            <div class="todo-checkbox">\${t.done ? '✓' : ''}</div>
+            <span>\${t.text}</span>
+          </div>
+          <button style="background:none;border:none;color:#94a3b8;cursor:pointer;" onclick="deleteTodo(\${t.id})">✕</button>
+        \`;
+        list.appendChild(item);
+      });
+      const doneCount = todos.filter(t => t.done).length;
+      document.getElementById('todoCounter').textContent = doneCount + '/' + todos.length + ' Completed';
+    }
+
+    window.toggleTodo = (id) => {
+      todos = todos.map(t => t.id === id ? { ...t, done: !t.done } : t);
+      renderTodos();
+    };
+
+    window.deleteTodo = (id) => {
+      todos = todos.filter(t => t.id !== id);
+      renderTodos();
+    };
+
+    document.getElementById('todoForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const inp = document.getElementById('todoInput');
+      if (!inp.value.trim()) return;
+      todos.push({ id: Date.now(), text: inp.value.trim(), done: false });
+      inp.value = '';
+      renderTodos();
+    });
+
+    renderTodos();
+
+    // --- Music Toggle ---
+    let isPlayingMusic = false;
+    function toggleMusic() {
+      isPlayingMusic = !isPlayingMusic;
+      const disc = document.getElementById('musicDisc');
+      const btn = document.getElementById('musicPlayBtn');
+      if (isPlayingMusic) {
+        disc.classList.add('playing');
+        btn.textContent = '⏸ Pause Audio';
+        setAiStatus('speaking');
+        showToast('MUSIC', 'Now playing: Midnight Coding Session');
+      } else {
+        disc.classList.remove('playing');
+        btn.textContent = '▶ Play Audio';
+        setAiStatus('idle');
+      }
+    }
+
+    // --- Calculator Graph Plotter ---
+    function plotGraph(fn) {
+      fetch('/api/math/graph', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fn, xMin: -6, xMax: 6, sampleCount: 60 })
       })
-      .catch(() => {});
+      .then(r => r.json())
+      .then(data => {
+        drawGraphOnCanvas(data.points, data.roots);
+      })
+      .catch(console.error);
+    }
+
+    function drawGraphOnCanvas(points, roots) {
+      const c = document.getElementById('graphCanvas');
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, c.width, c.height);
+
+      // Axes
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, c.height / 2); ctx.lineTo(c.width, c.height / 2);
+      ctx.moveTo(c.width / 2, 0); ctx.lineTo(c.width / 2, c.height);
+      ctx.stroke();
+
+      if (!points || !points.length) return;
+
+      // Plot curve
+      ctx.strokeStyle = '#06b6d4';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+
+      const scaleX = c.width / 12;
+      const scaleY = 25;
+
+      points.forEach((p, i) => {
+        if (p.y === null) return;
+        const cx = c.width / 2 + p.x * scaleX;
+        const cy = c.height / 2 - p.y * scaleY;
+        if (i === 0) ctx.moveTo(cx, cy);
+        else ctx.lineTo(cx, cy);
+      });
+      ctx.stroke();
+
+      if (roots && roots.length) {
+        document.getElementById('calcResult').textContent = 'Roots f(x)=0 at x: ' + roots.map(r => r.toFixed(2)).join(', ');
+      }
+    }
+
+    document.getElementById('calcForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      plotGraph(document.getElementById('calcInput').value.trim());
+    });
   </script>
 </body>
 </html>`;
@@ -745,8 +1686,8 @@ function getTestingHtml() {
 
 server.listen(PORT, () => {
   console.log(`\n======================================================`);
-  console.log(`🚀 Moco.AI Local Web Testing Server running at:`);
+  console.log(`🚀 Moco.AI HUD Local Web Server running at:`);
   console.log(`👉 http://localhost:${PORT}`);
   console.log(`======================================================\n`);
-  console.log(`Open http://localhost:${PORT} in your web browser (Chrome/Edge) to test voice input!`);
+  console.log(`Open http://localhost:${PORT} in your web browser (Chrome/Edge)!`);
 });

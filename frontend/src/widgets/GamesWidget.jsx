@@ -621,28 +621,37 @@ function TetrisGame({ onBack }) {
   }
 
   return (
-    <div className="flex-1 flex flex-col p-2.5 overflow-hidden">
-      {/* Top Header */}
-      <div className="flex items-center justify-between mb-2">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1 text-xs font-mono text-cyan-400 hover:text-cyan-300 p-1.5 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-400/40 transition"
-        >
-          <ChevronLeft size={14} />
-          <span>Arcade Hub</span>
-        </button>
-
-        <div className="flex items-center gap-2">
+    <div className="game-active-shell">
+      {/* Top Header / Navigation */}
+      <div className="game-active-nav">
+        <div className="game-nav-left">
           <button
-            onClick={() => setIsPaused(p => !p)}
-            className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:text-white text-slate-400 transition"
-            title="Pause Game (P)"
+            type="button"
+            onClick={onBack}
+            className="game-btn-back"
+          >
+            <ChevronLeft size={14} />
+            <span>Arcade Hub</span>
+          </button>
+          <div className="game-nav-title-group">
+            <span className="game-nav-title">Cyber Tetris</span>
+            <span className="game-nav-tag">Arcade Classic</span>
+          </div>
+        </div>
+
+        <div className="game-nav-right">
+          <button
+            type="button"
+            onClick={() => setIsPaused((p) => !p)}
+            className="game-icon-btn"
+            title="Pause / Resume (P)"
           >
             {isPaused ? <Play size={14} /> : <Pause size={14} />}
           </button>
           <button
+            type="button"
             onClick={resetGame}
-            className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:text-white text-slate-400 transition"
+            className="game-icon-btn"
             title="Restart Game"
           >
             <RotateCcw size={14} />
@@ -651,11 +660,11 @@ function TetrisGame({ onBack }) {
       </div>
 
       {/* Main Play Area */}
-      <div className="flex-1 flex items-center justify-center gap-4">
-        {/* Tetris Board */}
-        <div className="relative p-1.5 rounded-xl bg-black/60 border border-white/15 shadow-2xl">
+      <div className="game-play-area">
+        {/* Tetris Board Bezel */}
+        <div className="game-bezel-frame">
           <div
-            className="grid gap-[1px] bg-slate-950/80 p-0.5 rounded-lg"
+            className="game-tetris-grid"
             style={{
               gridTemplateColumns: `repeat(${TETRIS_COLS}, minmax(0, 1fr))`,
               width: '160px',
@@ -666,11 +675,11 @@ function TetrisGame({ onBack }) {
               row.map((cell, c) => (
                 <div
                   key={`${r}-${c}`}
-                  className="w-full h-full rounded-[2px] transition-colors"
+                  className="game-tetris-cell"
                   style={{
-                    backgroundColor: cell || 'rgba(255, 255, 255, 0.02)',
-                    boxShadow: cell ? `inset 0 0 4px rgba(255, 255, 255, 0.35), 0 0 6px ${cell}40` : 'none',
-                    border: cell ? '1px solid rgba(255, 255, 255, 0.25)' : '1px solid rgba(255, 255, 255, 0.02)'
+                    backgroundColor: cell || 'rgba(255, 255, 255, 0.03)',
+                    boxShadow: cell ? `inset 0 0 5px rgba(255, 255, 255, 0.45), 0 0 8px ${cell}70` : 'none',
+                    border: cell ? '1px solid rgba(255, 255, 255, 0.35)' : '1px solid rgba(255, 255, 255, 0.03)'
                   }}
                 />
               ))
@@ -679,18 +688,19 @@ function TetrisGame({ onBack }) {
 
           {/* Game Over Overlay */}
           {gameOver && (
-            <div className="absolute inset-0 bg-black/85 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center p-3 text-center">
-              <span className="text-rose-400 font-bold font-mono text-sm tracking-wider uppercase mb-1">
+            <div className="game-overlay-frost">
+              <span className="game-overlay-title">
                 Game Over
               </span>
-              <span className="text-xs text-white font-mono mb-3">
-                Final Score: <strong className="text-cyan-400">{score}</strong>
+              <span className="game-overlay-score">
+                Final Score: <strong style={{ color: '#22d3ee' }}>{score}</strong>
               </span>
               <button
+                type="button"
                 onClick={resetGame}
-                className="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-cyan-500/20"
+                className="game-overlay-btn"
               >
-                <RotateCcw size={12} />
+                <RotateCcw size={13} />
                 <span>Play Again</span>
               </button>
             </div>
@@ -698,47 +708,48 @@ function TetrisGame({ onBack }) {
 
           {/* Paused Overlay */}
           {isPaused && !gameOver && (
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center text-center">
-              <span className="text-cyan-400 font-bold font-mono text-sm tracking-widest uppercase">
+            <div className="game-overlay-frost">
+              <span className="game-overlay-title" style={{ color: '#22d3ee' }}>
                 Paused
               </span>
-              <span className="text-[11px] text-slate-400 mt-1">Press P or click Play</span>
+              <span className="game-overlay-score">Press P or click Play</span>
             </div>
           )}
         </div>
 
         {/* Sidebar Info & Controls */}
-        <div className="flex flex-col justify-between h-[320px] w-40">
+        <div className="game-sidebar-deck">
           {/* Stats Box */}
-          <div className="space-y-2">
-            <div className="p-2.5 rounded-xl bg-slate-900/60 border border-white/10">
-              <div className="text-[10px] font-mono text-slate-400 uppercase">Score</div>
-              <div className="text-lg font-bold font-mono text-cyan-400">{score}</div>
-            </div>
+          <div className="game-panel-card">
+            <span className="game-panel-label">Current Score</span>
+            <span className="game-digital-score">{score}</span>
+          </div>
 
-            <div className="grid grid-cols-2 gap-1.5">
-              <div className="p-2 rounded-xl bg-slate-900/60 border border-white/10">
-                <div className="text-[9px] font-mono text-slate-400 uppercase">Lines</div>
-                <div className="text-sm font-bold font-mono text-white">{lines}</div>
-              </div>
-              <div className="p-2 rounded-xl bg-slate-900/60 border border-white/10">
-                <div className="text-[9px] font-mono text-slate-400 uppercase">Level</div>
-                <div className="text-sm font-bold font-mono text-purple-400">{level}</div>
-              </div>
+          {/* Lines & Level */}
+          <div className="game-badge-row">
+            <div className="game-badge-subcard">
+              <span className="game-panel-label">Lines</span>
+              <div className="game-badge-val">{lines}</div>
             </div>
+            <div className="game-badge-subcard">
+              <span className="game-panel-label">Level</span>
+              <div className="game-badge-val" style={{ color: '#8b5cf6' }}>{level}</div>
+            </div>
+          </div>
 
-            {/* Next Piece Preview */}
-            <div className="p-2.5 rounded-xl bg-slate-900/60 border border-white/10 flex flex-col items-center">
-              <div className="text-[10px] font-mono text-slate-400 uppercase mb-1.5 self-start">
-                Next Piece
-              </div>
-              <div className="grid grid-cols-4 gap-0.5 p-1 bg-black/40 rounded-lg">
+          {/* Next Piece Chamber */}
+          <div className="game-panel-card" style={{ padding: '8px 10px' }}>
+            <span className="game-panel-label">Next Piece</span>
+            <div className="game-next-chamber">
+              <div className="grid grid-cols-4 gap-0.5" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2px' }}>
                 {nextPiece.shape.map((row, r) =>
                   row.map((cell, c) => (
                     <div
                       key={`next-${r}-${c}`}
-                      className="w-3 h-3 rounded-[2px]"
                       style={{
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '2px',
                         backgroundColor: cell ? nextPiece.color : 'transparent',
                         boxShadow: cell ? `0 0 6px ${nextPiece.glow}` : 'none'
                       }}
@@ -749,46 +760,60 @@ function TetrisGame({ onBack }) {
             </div>
           </div>
 
-          {/* On-Screen Touch / Click Buttons */}
-          <div className="p-2 rounded-xl bg-slate-900/60 border border-white/10">
-            <div className="text-[9px] font-mono text-slate-400 text-center uppercase mb-1">
-              Controls
-            </div>
-            <div className="grid grid-cols-3 gap-1">
+          {/* Tactile Arcade Controller Buttons */}
+          <div className="game-controls-card">
+            <div className="game-dpad-grid">
               <button
+                type="button"
                 onClick={moveLeft}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-cyan-500/20 hover:text-cyan-400 flex items-center justify-center text-slate-300 transition"
-                title="Left (←)"
+                className="game-ctrl-btn"
+                title="Move Left (A / ←)"
               >
                 <ArrowLeft size={14} />
+                <span className="game-ctrl-key">A</span>
               </button>
+
               <button
+                type="button"
                 onClick={rotate}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-cyan-500/20 hover:text-cyan-400 flex items-center justify-center text-slate-300 transition"
-                title="Rotate (↑)"
+                className="game-ctrl-btn"
+                title="Rotate Piece (W / ↑)"
               >
                 <RotateCw size={14} />
+                <span className="game-ctrl-key">W</span>
               </button>
+
               <button
+                type="button"
                 onClick={moveRight}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-cyan-500/20 hover:text-cyan-400 flex items-center justify-center text-slate-300 transition"
-                title="Right (→)"
+                className="game-ctrl-btn"
+                title="Move Right (D / →)"
               >
                 <ArrowRight size={14} />
+                <span className="game-ctrl-key">D</span>
               </button>
+
               <button
+                type="button"
                 onClick={moveDown}
-                className="col-span-2 p-1.5 rounded-lg bg-white/5 hover:bg-cyan-500/20 hover:text-cyan-400 flex items-center justify-center text-xs font-mono text-slate-300 transition"
-                title="Drop (↓)"
+                className="game-ctrl-btn"
+                style={{ gridColumn: 'span 3', flexDirection: 'row', gap: '6px', height: '32px' }}
+                title="Soft Drop (S / ↓)"
               >
-                <ArrowDown size={14} className="mr-1" /> Drop
+                <ArrowDown size={13} />
+                <span style={{ fontSize: '11px', fontWeight: 600 }}>Soft Drop</span>
+                <span className="game-ctrl-key" style={{ marginTop: 0 }}>[S]</span>
               </button>
+
               <button
+                type="button"
                 onClick={hardDrop}
-                className="p-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 font-bold text-xs font-mono transition flex items-center justify-center"
-                title="Hard Drop (Space)"
+                className="game-hard-drop-btn"
+                title="Hard Instant Drop (Space)"
               >
                 <Zap size={14} />
+                <span>Hard Drop</span>
+                <span style={{ opacity: 0.8, fontSize: '9px' }}>[Space]</span>
               </button>
             </div>
           </div>
@@ -871,32 +896,44 @@ function ChessGame({ onBack }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col p-2.5 overflow-hidden">
+    <div className="game-active-shell">
       {/* Header Bar */}
-      <div className="flex items-center justify-between mb-2">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1 text-xs font-mono text-cyan-400 hover:text-cyan-300 p-1.5 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-400/40 transition"
-        >
-          <ChevronLeft size={14} />
-          <span>Arcade Hub</span>
-        </button>
-
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 text-xs font-mono px-3 py-1 rounded-full bg-slate-900 border border-white/10">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                turn === 'white' ? 'bg-cyan-400 shadow-[0_0_8px_#06b6d4]' : 'bg-purple-400 shadow-[0_0_8px_#c084fc]'
-              }`}
-            />
-            <span className="text-white font-bold uppercase">
-              {turn === 'white' ? 'White to Move' : 'Black to Move'}
+      <div className="game-active-nav">
+        <div className="game-nav-left">
+          <button
+            type="button"
+            onClick={onBack}
+            className="game-btn-back"
+          >
+            <ChevronLeft size={14} />
+            <span>Arcade Hub</span>
+          </button>
+          <div className="game-nav-title-group">
+            <span className="game-nav-title">Quantum Chess</span>
+            <span className="game-nav-tag" style={{ background: 'rgba(124, 58, 237, 0.15)', borderColor: 'rgba(124, 58, 237, 0.35)', color: '#a855f7' }}>
+              Tactics
             </span>
+          </div>
+        </div>
+
+        <div className="game-nav-right">
+          <div className="game-stats-pill" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span
+              style={{
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
+                background: turn === 'white' ? '#0891b2' : '#7c3aed',
+                boxShadow: turn === 'white' ? '0 0 6px #06b6d4' : '0 0 6px #a855f7'
+              }}
+            />
+            <span>{turn === 'white' ? 'WHITE TURN' : 'BLACK TURN'}</span>
           </div>
 
           <button
+            type="button"
             onClick={resetChess}
-            className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:text-white text-slate-400 transition"
+            className="game-icon-btn"
             title="Reset Board"
           >
             <RotateCcw size={14} />
@@ -905,10 +942,21 @@ function ChessGame({ onBack }) {
       </div>
 
       {/* Main Board View */}
-      <div className="flex-1 flex items-center justify-center gap-5">
-        {/* 8x8 Chessboard */}
-        <div className="p-2 rounded-2xl bg-black/60 border border-white/15 shadow-2xl">
-          <div className="grid grid-cols-8 grid-rows-8 w-72 h-72 border border-white/10 rounded-xl overflow-hidden">
+      <div className="game-play-area">
+        {/* 8x8 Chessboard Bezel */}
+        <div className="game-bezel-frame" style={{ padding: '8px' }}>
+          <div
+            className="game-chess-board"
+            style={{
+              width: '280px',
+              height: '280px',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(8, 1fr)',
+              gridTemplateRows: 'repeat(8, 1fr)',
+              borderRadius: '8px',
+              overflow: 'hidden'
+            }}
+          >
             {board.map((row, r) =>
               row.map((cell, c) => {
                 const isSelected = selectedSquare && selectedSquare.r === r && selectedSquare.c === c;
@@ -920,31 +968,23 @@ function ChessGame({ onBack }) {
                     key={`${r}-${c}`}
                     type="button"
                     onClick={() => handleSquareClick(r, c)}
-                    className={`relative w-full h-full flex items-center justify-center transition-all cursor-pointer select-none ${
-                      isSelected
-                        ? 'bg-cyan-500/40 ring-2 ring-cyan-400 ring-inset'
-                        : isDarkSquare
-                        ? 'bg-slate-900/90'
-                        : 'bg-slate-800/50'
-                    }`}
+                    className={`game-chess-square ${isDarkSquare ? 'dark' : 'light'} ${isSelected ? 'selected' : ''}`}
+                    style={{ border: 'none', outline: 'none' }}
                   >
                     {/* Destination Target Marker */}
                     {isTarget && (
-                      <span
-                        className={`absolute w-3 h-3 rounded-full pointer-events-none ${
-                          cell ? 'ring-2 ring-rose-400 bg-rose-500/40' : 'bg-cyan-400/80 shadow-[0_0_6px_#06b6d4]'
-                        }`}
-                      />
+                      <span className="game-chess-valid-dot" />
                     )}
 
                     {/* Chess Piece Symbol */}
                     {cell && (
                       <span
-                        className={`text-2xl font-normal leading-none transform transition-transform hover:scale-110 ${
-                          isWhite(cell)
-                            ? 'text-cyan-200 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]'
-                            : 'text-purple-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]'
-                        }`}
+                        style={{
+                          fontSize: '20px',
+                          lineHeight: 1,
+                          color: isWhite(cell) ? (isDarkSquare ? '#e0f2fe' : '#0369a1') : '#7e22ce',
+                          filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))'
+                        }}
                       >
                         {CHESS_SYMBOLS[cell]}
                       </span>
@@ -957,15 +997,13 @@ function ChessGame({ onBack }) {
         </div>
 
         {/* Tactical Tray & History */}
-        <div className="flex flex-col justify-between h-72 w-40">
+        <div className="game-sidebar-deck" style={{ height: '296px' }}>
           {/* Captured White Pieces */}
-          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-white/10">
-            <span className="text-[10px] font-mono text-cyan-400 uppercase block mb-1">
-              Captured (White)
-            </span>
-            <div className="flex flex-wrap gap-1 min-h-[22px] text-sm text-cyan-200">
+          <div className="game-panel-card">
+            <span className="game-panel-label" style={{ color: '#0891b2' }}>Captured (White)</span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', minHeight: '22px', fontSize: '15px', color: '#0284c7' }}>
               {capturedWhite.length === 0 ? (
-                <span className="text-[10px] text-slate-500">None</span>
+                <span style={{ fontSize: '11px', color: '#94a3b8' }}>None</span>
               ) : (
                 capturedWhite.map((p, i) => <span key={i}>{CHESS_SYMBOLS[p]}</span>)
               )}
@@ -973,13 +1011,11 @@ function ChessGame({ onBack }) {
           </div>
 
           {/* Captured Black Pieces */}
-          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-white/10">
-            <span className="text-[10px] font-mono text-purple-400 uppercase block mb-1">
-              Captured (Black)
-            </span>
-            <div className="flex flex-wrap gap-1 min-h-[22px] text-sm text-purple-400">
+          <div className="game-panel-card">
+            <span className="game-panel-label" style={{ color: '#7c3aed' }}>Captured (Black)</span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', minHeight: '22px', fontSize: '15px', color: '#9333ea' }}>
               {capturedBlack.length === 0 ? (
-                <span className="text-[10px] text-slate-500">None</span>
+                <span style={{ fontSize: '11px', color: '#94a3b8' }}>None</span>
               ) : (
                 capturedBlack.map((p, i) => <span key={i}>{CHESS_SYMBOLS[p]}</span>)
               )}
@@ -987,17 +1023,15 @@ function ChessGame({ onBack }) {
           </div>
 
           {/* Move Log */}
-          <div className="flex-1 p-2.5 rounded-xl bg-slate-900/60 border border-white/10 mt-2 flex flex-col">
-            <span className="text-[10px] font-mono text-slate-400 uppercase mb-1">
-              Move History
-            </span>
-            <div className="flex-1 overflow-y-auto space-y-1 font-mono text-[10px] text-slate-300 scrollbar-thin">
+          <div className="game-panel-card" style={{ flex: 1, minHeight: '80px', overflow: 'hidden' }}>
+            <span className="game-panel-label">Move History</span>
+            <div style={{ flex: 1, overflowY: 'auto', fontFamily: 'JetBrains Mono, monospace', fontSize: '10px', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '2px' }}>
               {moveHistory.length === 0 ? (
-                <span className="text-slate-500">Tap piece to begin</span>
+                <span style={{ color: '#94a3b8' }}>Tap piece to move</span>
               ) : (
                 moveHistory.map((m, idx) => (
-                  <div key={idx} className="flex items-center gap-1">
-                    <span className="text-cyan-400">▸</span>
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ color: '#06b6d4' }}>▸</span>
                     <span>{m}</span>
                   </div>
                 ))
@@ -1009,6 +1043,7 @@ function ChessGame({ onBack }) {
     </div>
   );
 }
+
 
 /* ========================================================================= */
 /* 4. PLAYABLE NEON SNAKE GAME                                               */
@@ -1088,34 +1123,40 @@ function SnakeGame({ onBack }) {
   }, [dir]);
 
   return (
-    <div className="flex-1 flex flex-col p-2.5 overflow-hidden">
-      <div className="flex items-center justify-between mb-2">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1 text-xs font-mono text-cyan-400 hover:text-cyan-300 p-1.5 rounded-lg bg-white/5 border border-white/10 transition"
-        >
-          <ChevronLeft size={14} />
-          <span>Arcade Hub</span>
-        </button>
+    <div className="game-active-shell">
+      <div className="game-active-nav">
+        <div className="game-nav-left">
+          <button type="button" onClick={onBack} className="game-btn-back">
+            <ChevronLeft size={14} />
+            <span>Arcade Hub</span>
+          </button>
+          <div className="game-nav-title-group">
+            <span className="game-nav-title">Neon Serpent</span>
+            <span className="game-nav-tag" style={{ background: 'rgba(5, 150, 105, 0.15)', borderColor: 'rgba(5, 150, 105, 0.35)', color: '#059669' }}>
+              Reflex
+            </span>
+          </div>
+        </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-mono text-slate-300">
-            Score: <strong className="text-emerald-400">{score}</strong>
-          </span>
-          <button
-            onClick={resetSnake}
-            className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:text-white text-slate-400 transition"
-          >
+        <div className="game-nav-right">
+          <div className="game-stats-pill" style={{ color: '#059669' }}>
+            <span>SCORE: <strong>{score}</strong></span>
+          </div>
+          <button type="button" onClick={resetSnake} className="game-icon-btn" title="Reset Snake">
             <RotateCcw size={14} />
           </button>
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center">
-        <div className="relative p-2 rounded-2xl bg-black/60 border border-white/15">
+      <div className="game-play-area">
+        <div className="game-bezel-frame" style={{ padding: '8px' }}>
           <div
-            className="grid gap-[2px] bg-slate-950 p-1 rounded-xl"
             style={{
+              display: 'grid',
+              gap: '2px',
+              backgroundColor: '#040711',
+              padding: '4px',
+              borderRadius: '8px',
               gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
               width: '260px',
               height: '260px'
@@ -1131,8 +1172,9 @@ function SnakeGame({ onBack }) {
               return (
                 <div
                   key={i}
-                  className="rounded-[2px] transition-all"
                   style={{
+                    borderRadius: '2px',
+                    transition: 'all 0.08s ease',
                     backgroundColor: isHead
                       ? '#34d399'
                       : isBody
@@ -1152,22 +1194,72 @@ function SnakeGame({ onBack }) {
           </div>
 
           {gameOver && (
-            <div className="absolute inset-0 bg-black/85 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center p-3 text-center">
-              <span className="text-rose-400 font-bold font-mono text-sm uppercase mb-1">
-                Collision Detected
-              </span>
-              <span className="text-xs text-white font-mono mb-3">
-                Score: <strong className="text-emerald-400">{score}</strong>
+            <div className="game-overlay-frost">
+              <span className="game-overlay-title">Collision Detected</span>
+              <span className="game-overlay-score">
+                Final Score: <strong style={{ color: '#34d399' }}>{score}</strong>
               </span>
               <button
+                type="button"
                 onClick={resetSnake}
-                className="px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-emerald-500/20"
+                className="game-overlay-btn"
+                style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)' }}
               >
-                <RotateCcw size={12} />
+                <RotateCcw size={13} />
                 <span>Try Again</span>
               </button>
             </div>
           )}
+        </div>
+
+        {/* Tactile D-Pad Controls on Sidebar */}
+        <div className="game-sidebar-deck" style={{ height: '276px', justifyContent: 'center' }}>
+          <div className="game-panel-card" style={{ textAlign: 'center', marginBottom: '8px' }}>
+            <span className="game-panel-label">Controls</span>
+            <span style={{ fontSize: '11px', color: '#64748b' }}>Arrow Keys or D-Pad</span>
+          </div>
+
+          <div className="game-controls-card">
+            <div className="game-dpad-grid">
+              <div />
+              <button
+                type="button"
+                onClick={() => dir.y === 0 && setDir({ x: 0, y: -1 })}
+                className="game-ctrl-btn"
+                title="Up"
+              >
+                <ArrowDown size={14} style={{ transform: 'rotate(180deg)' }} />
+              </button>
+              <div />
+
+              <button
+                type="button"
+                onClick={() => dir.x === 0 && setDir({ x: -1, y: 0 })}
+                className="game-ctrl-btn"
+                title="Left"
+              >
+                <ArrowLeft size={14} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => dir.y === 0 && setDir({ x: 0, y: 1 })}
+                className="game-ctrl-btn"
+                title="Down"
+              >
+                <ArrowDown size={14} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => dir.x === 0 && setDir({ x: 1, y: 0 })}
+                className="game-ctrl-btn"
+                title="Right"
+              >
+                <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1211,49 +1303,55 @@ function TicTacToeGame({ onBack }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col p-2.5 overflow-hidden">
-      <div className="flex items-center justify-between mb-2">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1 text-xs font-mono text-cyan-400 hover:text-cyan-300 p-1.5 rounded-lg bg-white/5 border border-white/10 transition"
-        >
-          <ChevronLeft size={14} />
-          <span>Arcade Hub</span>
-        </button>
+    <div className="game-active-shell">
+      <div className="game-active-nav">
+        <div className="game-nav-left">
+          <button type="button" onClick={onBack} className="game-btn-back">
+            <ChevronLeft size={14} />
+            <span>Arcade Hub</span>
+          </button>
+          <div className="game-nav-title-group">
+            <span className="game-nav-title">Matrix 3x3 Duel</span>
+            <span className="game-nav-tag" style={{ background: 'rgba(245, 158, 11, 0.15)', borderColor: 'rgba(245, 158, 11, 0.35)', color: '#d97706' }}>
+              Quick Duel
+            </span>
+          </div>
+        </div>
 
-        <button
-          onClick={resetGame}
-          className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:text-white text-slate-400 transition"
-        >
-          <RotateCcw size={14} />
-        </button>
+        <div className="game-nav-right">
+          <button type="button" onClick={resetGame} className="game-icon-btn" title="Reset Grid">
+            <RotateCcw size={14} />
+          </button>
+        </div>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center">
-        <div className="grid grid-cols-3 gap-2.5 w-60 h-60 mb-3">
+      <div className="game-play-area" style={{ flexDirection: 'column' }}>
+        <div className="game-ttt-grid">
           {board.map((cell, idx) => (
             <button
               key={idx}
+              type="button"
               onClick={() => handleClick(idx)}
-              className="w-full h-full rounded-2xl bg-slate-900/80 border border-white/10 hover:border-cyan-400/50 text-2xl font-bold font-mono transition flex items-center justify-center shadow-lg hover:scale-105"
+              className="game-ttt-cell"
             >
-              <span className={cell === 'X' ? 'text-cyan-400 drop-shadow-[0_0_8px_#06b6d4]' : 'text-purple-400 drop-shadow-[0_0_8px_#c084fc]'}>
+              <span style={{ color: cell === 'X' ? '#0891b2' : '#9333ea', textShadow: cell === 'X' ? '0 0 10px rgba(6, 182, 212, 0.4)' : '0 0 10px rgba(168, 85, 247, 0.4)' }}>
                 {cell}
               </span>
             </button>
           ))}
         </div>
 
-        <div className="text-xs font-mono text-slate-300">
+        <div className="game-stats-pill" style={{ padding: '6px 16px', fontSize: '12px' }}>
           {winner ? (
-            <span className="text-cyan-300 font-bold">
-              {winner === 'Draw' ? "It's a Stalemate Draw!" : `Victory: ${winner}!`}
+            <span style={{ color: '#0891b2', fontWeight: 800 }}>
+              {winner === 'Draw' ? "Stalemate Draw!" : `Victory: Player ${winner}!`}
             </span>
           ) : (
-            <span>Turn: <strong className="text-cyan-400">{isXNext ? 'Player X' : 'Player O'}</strong></span>
+            <span>Turn: <strong style={{ color: isXNext ? '#0891b2' : '#9333ea' }}>{isXNext ? 'Player X' : 'Player O'}</strong></span>
           )}
         </div>
       </div>
     </div>
   );
 }
+

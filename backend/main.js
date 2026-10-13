@@ -3,6 +3,8 @@ const { app, BrowserWindow, globalShortcut, screen } = electron;
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { setupIpcHandlers } from './ipc/index.js';
+import { getStartupSetting } from './services/settingsService.js';
+import { createMascotWindow } from './services/mascotService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -77,6 +79,12 @@ async function createWindow() {
 
 app.whenReady().then(() => {
   createWindow();
+
+  // If open on startup is enabled, spawn the floating dog logo mascot
+  const startup = getStartupSetting();
+  if (startup.openAtLogin) {
+    createMascotWindow(mainWindow);
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

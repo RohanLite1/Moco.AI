@@ -62,7 +62,17 @@ export const IPC_CHANNELS = {
  * - analyzeScreen(prompt?: string): Promise<{ capture: any, analysis: string }>
  * - translate(text: string, targetLanguage: string): Promise<{ translation: string }>
  * 
+ * --- Settings & Open on Startup ---
+ * - getStartupSetting(): Promise<{ openAtLogin: boolean }>
+ * - setStartupSetting(openAtLogin: boolean): Promise<{ success: boolean, openAtLogin: boolean }>
+ * 
+ * --- Floating Dog Logo Mascot ---
+ * - toggleMascot(enable: boolean): Promise<boolean>
+ * - mascotHover(isHovered: boolean): void
+ * - mascotClick(): void
+ * 
  * --- System & Storage ---
+ * - closeApp(): void
  * - hideWindow(): void
  * - togglePin(): Promise<boolean>
  * - getStorage(key: string, defaultValue?: any): Promise<any>

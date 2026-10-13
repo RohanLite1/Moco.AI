@@ -1,5 +1,5 @@
 import electron from 'electron';
-const { ipcMain, Notification } = electron;
+const { ipcMain, Notification, app } = electron;
 
 import { generateStreamingResponse, checkOllamaHealth, clearConversationHistory } from '../services/ollamaService.js';
 import { evaluateExpression, generateGraphData } from '../services/mathService.js';
@@ -10,6 +10,8 @@ import { SnakeGame } from '../services/gameEngines/snakeEngine.js';
 import { translateText } from '../services/translatorService.js';
 import { capturePrimaryScreen, analyzeScreen } from '../services/screenService.js';
 import { getItem, setItem } from '../services/storageService.js';
+import { getStartupSetting, setStartupSetting } from '../services/settingsService.js';
+import { createMascotWindow, handleMascotHover, handleMascotClick, destroyMascotWindow } from '../services/mascotService.js';
 
 // Stateful game instances per session
 let activeChess = new ChessGame();
@@ -134,18 +136,59 @@ export function setupIpcHandlers(mainWindow) {
     return translateText(text, targetLanguage);
   });
 
-  // --- Window controls ---
-  ipcMain.on('window:hide', () => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.hide();
+  // --- 5. Settings & Open on Startup ---
+  ipcMain.handle('settings:get-startup', () => {
+    return getStartupSetting();
+  });
+
+  ipcMain.handle('settings:set-startup', (event, { openAtLogin }) => {
+    const res = setStartupSetting(openAtLogin);
+    if (openAtLogin) {
+      createMascotWindow(mainWindow);
+    } else {
+      destroyMascotWindow();
+    }
+    return res;
+  });
+
+  // --- 6. Floating Dog Logo Mascot ---
+  ipcMain.handle('mascot:toggle', (event, { enable }) => {
+    if (enable) {
+      createMascotWindow(mainWindow);
+      return true;
+    } else {
+      destroyMascotWindow();
+      return false;
     }
   });
 
+  ipcMain.on('mascot:hover', (event, isHovered) => {
+    handleMascotHover(isHovered);
+  });
+
+  ipcMain.on('mascot:click', () => {
+    handleMascotClick(mainWindow);
+  });
+
+  // --- Window controls ---
+  // Fix Close Button: Close the application immediately
+  ipcMain.on('window:hide', () => {
+    app.quit();
+  });
+
+  ipcMain.on('window:close', () => {
+    app.quit();
+  });
+
+  // Fix Pin Button: Pin strictly above all desktop windows
   let isPinned = false;
   ipcMain.handle('window:pin', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       isPinned = !isPinned;
-      mainWindow.setAlwaysOnTop(isPinned);
+      mainWindow.setAlwaysOnTop(isPinned, 'screen-saver');
+      if (isPinned) {
+        mainWindow.moveTop();
+      }
       return isPinned;
     }
     return false;

@@ -53,7 +53,17 @@ contextBridge.exposeInMainWorld('mocoApi', {
   analyzeScreen: (prompt) => ipcRenderer.invoke('screen:analyze', { prompt }),
   translate: (text, targetLanguage) => ipcRenderer.invoke('translate:text', { text, targetLanguage }),
 
+  // 5. Settings & Open on Startup
+  getStartupSetting: () => ipcRenderer.invoke('settings:get-startup'),
+  setStartupSetting: (openAtLogin) => ipcRenderer.invoke('settings:set-startup', { openAtLogin }),
+
+  // 6. Floating Dog Logo Mascot
+  toggleMascot: (enable) => ipcRenderer.invoke('mascot:toggle', { enable }),
+  mascotHover: (isHovered) => ipcRenderer.send('mascot:hover', isHovered),
+  mascotClick: () => ipcRenderer.send('mascot:click'),
+
   // Window Controls
+  closeApp: () => ipcRenderer.send('window:close'),
   hideWindow: () => ipcRenderer.send('window:hide'),
   togglePin: () => ipcRenderer.invoke('window:pin'),
 

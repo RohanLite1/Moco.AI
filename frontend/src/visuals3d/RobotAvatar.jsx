@@ -380,35 +380,79 @@ export default function RobotAvatar({
     headGroup.add(rightNostril);
 
     // -------------------------------------------------------------------------
-    // 3. WHISKER FOLLICLE DOTS & THIN HAIR-LIKE WHISKERS (ON BOTH SIDES AT DISTANCE)
+    // 3. WHISKER CIRCLES & SIDEWAYS WHISKER HAIRS (ON BOTH SIDES OF NOSE)
     // -------------------------------------------------------------------------
-    // Follicle Pores / Dots Pattern on both sides of the nose (as in reference image)
-    const follicleDotGeo = new THREE.SphereGeometry(0.015, 8, 8);
-    follicleDotGeo.scale(1.0, 1.0, 0.35);
+    // Follicle Pores / Dots on both cheek circles
+    const follicleDotGeo = new THREE.SphereGeometry(0.024, 12, 12);
+    follicleDotGeo.scale(1.0, 1.0, 0.45);
 
-    // Distinct dot pattern on left cheek pad (at distance from center nose)
-    const leftFollicleDots = [
-      // Top row (3 dots)
-      { x: -0.18, y: -0.14, z: 1.35 },
-      { x: -0.26, y: -0.16, z: 1.31 },
-      { x: -0.34, y: -0.19, z: 1.26 },
-      // Lower row (4 dots cluster)
-      { x: -0.20, y: -0.22, z: 1.32 },
-      { x: -0.28, y: -0.24, z: 1.28 },
-      { x: -0.36, y: -0.26, z: 1.22 },
-      { x: -0.42, y: -0.27, z: 1.16 }
+    // 4 Distinct Follicle Dots & Whisker Roots inside each cheek circle
+    const whiskerConfigs = [
+      {
+        // Top whisker
+        pos: { x: -0.24, y: -0.15, z: 1.34 },
+        length: 0.46,
+        rotZ: Math.PI * 0.5 - 0.08,
+        rotY: -0.25
+      },
+      {
+        // Mid-outer main whisker
+        pos: { x: -0.30, y: -0.19, z: 1.30 },
+        length: 0.56,
+        rotZ: Math.PI * 0.5 + 0.05,
+        rotY: -0.20
+      },
+      {
+        // Mid-inner whisker
+        pos: { x: -0.20, y: -0.21, z: 1.35 },
+        length: 0.42,
+        rotZ: Math.PI * 0.5 + 0.14,
+        rotY: -0.32
+      },
+      {
+        // Lower whisker
+        pos: { x: -0.28, y: -0.24, z: 1.28 },
+        length: 0.50,
+        rotZ: Math.PI * 0.5 + 0.24,
+        rotY: -0.15
+      }
     ];
 
-    leftFollicleDots.forEach((pos) => {
-      // Left dot
+    const whiskerHairMat = new THREE.MeshStandardMaterial({
+      color: 0x334155,
+      metalness: 0.4,
+      roughness: 0.3
+    });
+
+    const whiskerHairGeos = [];
+
+    whiskerConfigs.forEach(({ pos, length, rotZ, rotY }) => {
+      // 1. Follicle Dot inside the circle (Left)
       const dotL = new THREE.Mesh(follicleDotGeo, darkTrimMat);
       dotL.position.set(pos.x, pos.y, pos.z);
       headGroup.add(dotL);
 
-      // Right dot (mirrored)
+      // Follicle Dot inside the circle (Right - mirrored)
       const dotR = new THREE.Mesh(follicleDotGeo, darkTrimMat);
       dotR.position.set(-pos.x, pos.y, pos.z);
       headGroup.add(dotR);
+
+      // 2. Whisker Hair (Fine tapered strand pointing SIDEWAYS away from nose)
+      const hairGeo = new THREE.CylinderGeometry(0.001, 0.0035, length, 8);
+      hairGeo.translate(0, length / 2, 0); // Origin at follicle root
+      whiskerHairGeos.push(hairGeo);
+
+      // Left whisker: points horizontally to the left (-X) and droops slightly
+      const hairL = new THREE.Mesh(hairGeo, whiskerHairMat);
+      hairL.position.set(pos.x, pos.y, pos.z);
+      hairL.rotation.set(0, rotY, rotZ);
+      headGroup.add(hairL);
+
+      // Right whisker: points horizontally to the right (+X) and droops slightly
+      const hairR = new THREE.Mesh(hairGeo, whiskerHairMat);
+      hairR.position.set(-pos.x, pos.y, pos.z);
+      hairR.rotation.set(0, -rotY, -rotZ);
+      headGroup.add(hairR);
     });
 
 
@@ -893,6 +937,7 @@ export default function RobotAvatar({
       noseGeo.dispose();
       nostrilGeo.dispose();
       follicleDotGeo.dispose();
+      whiskerHairGeos.forEach((g) => g.dispose());
       chinGeo.dispose();
       lowerLipGeo.dispose();
       mouthInteriorGeo.dispose();

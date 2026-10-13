@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 /**
  * Procedural Texture Generator Helpers
@@ -227,6 +228,43 @@ export default function RobotAvatar({
     const headGroup = new THREE.Group();
     rootGroup.add(headGroup);
 
+    // Procedural Model Group (Falls back automatically if no Blender model is present)
+    const proceduralGroup = new THREE.Group();
+    headGroup.add(proceduralGroup);
+
+    // Auto-load Blender / Sketchfab .glb model if user places one at /models/aibo.glb
+    const gltfLoader = new GLTFLoader();
+    gltfLoader.load(
+      '/models/aibo.glb',
+      (gltf) => {
+        const loaded = gltf.scene;
+        loaded.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            if (child.material) {
+              child.material.needsUpdate = true;
+            }
+          }
+        });
+        const box = new THREE.Box3().setFromObject(loaded);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        if (maxDim > 0) {
+          const s = (compact ? 2.2 : 2.7) / maxDim;
+          loaded.scale.setScalar(s);
+          loaded.position.set(-center.x * s, -center.y * s, -center.z * s);
+        }
+        proceduralGroup.visible = false;
+        headGroup.add(loaded);
+      },
+      undefined,
+      () => {
+        // Fallback procedural model stays active
+      }
+    );
+
     // -------------------------------------------------------------------------
     // PROCEDURAL TEXTURES & MATERIALS
     // -------------------------------------------------------------------------
@@ -289,14 +327,14 @@ export default function RobotAvatar({
     skullGeo.scale(1.12, 1.05, 1.18);
     skullGeo.translate(0, 0.05, -0.15);
     const skullMesh = new THREE.Mesh(skullGeo, whiteSkullMat);
-    headGroup.add(skullMesh);
+    proceduralGroup.add(skullMesh);
 
     // Front Beige Faceplate
     const faceGeo = new THREE.SphereGeometry(0.96, 36, 36);
     faceGeo.scale(1.08, 0.98, 1.15);
     faceGeo.translate(0, 0.02, 0.18);
     const faceMesh = new THREE.Mesh(faceGeo, beigeFaceMat);
-    headGroup.add(faceMesh);
+    proceduralGroup.add(faceMesh);
 
     // -------------------------------------------------------------------------
     // 2. SONY AIBO SNOUT & CAMERA BUTTON NOSE (OFFICIAL REPLICA)
@@ -306,20 +344,20 @@ export default function RobotAvatar({
     snoutGeo.scale(1.15, 0.84, 1.28);
     snoutGeo.translate(0, -0.19, 0.84);
     const snoutMesh = new THREE.Mesh(snoutGeo, beigeFaceMat);
-    headGroup.add(snoutMesh);
+    proceduralGroup.add(snoutMesh);
 
     // Sony Aibo Sensor Button Nose
     const noseGeo = new THREE.SphereGeometry(0.18, 24, 24);
     noseGeo.scale(1.22, 0.88, 0.92);
     noseGeo.translate(0, -0.05, 1.38);
     const noseMesh = new THREE.Mesh(noseGeo, darkTrimMat);
-    headGroup.add(noseMesh);
+    proceduralGroup.add(noseMesh);
 
     // Front Camera Lens Element inside Aibo's nose
     const lensRimGeo = new THREE.TorusGeometry(0.045, 0.012, 16, 24);
     const lensRim = new THREE.Mesh(lensRimGeo, darkTrimMat);
     lensRim.position.set(0, -0.05, 1.48);
-    headGroup.add(lensRim);
+    proceduralGroup.add(lensRim);
 
     const lensGlassGeo = new THREE.SphereGeometry(0.038, 16, 16);
     lensGlassGeo.scale(1, 1, 0.35);
@@ -332,14 +370,14 @@ export default function RobotAvatar({
     });
     const lensGlass = new THREE.Mesh(lensGlassGeo, lensGlassMat);
     lensGlass.position.set(0, -0.05, 1.485);
-    headGroup.add(lensGlass);
+    proceduralGroup.add(lensGlass);
 
     // Clean Horizontal Mouth Seam
     const mouthSeamGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.46, 16);
     mouthSeamGeo.rotateZ(Math.PI / 2);
     mouthSeamGeo.translate(0, -0.28, 1.14);
     const mouthSeam = new THREE.Mesh(mouthSeamGeo, darkTrimMat);
-    headGroup.add(mouthSeam);
+    proceduralGroup.add(mouthSeam);
 
 
     // --- ARTICULATED LOWER JAW & PUPPY CHIN ---
@@ -410,7 +448,7 @@ export default function RobotAvatar({
 
     jawPivot.add(tonguePivot);
 
-    headGroup.add(jawPivot);
+    proceduralGroup.add(jawPivot);
 
     // -------------------------------------------------------------------------
     // 3. TRUE 3D EMBEDDED OLED EYEBALLS & 3D BLINKING EYELIDS
@@ -425,26 +463,26 @@ export default function RobotAvatar({
     leftEyePivot.position.set(-0.46, 0.22, 0.92);
     const leftEyeball = new THREE.Mesh(eyeGeo, eyeballMat);
     leftEyePivot.add(leftEyeball);
-    headGroup.add(leftEyePivot);
+    proceduralGroup.add(leftEyePivot);
 
     // Right Eyeball
     const rightEyePivot = new THREE.Group();
     rightEyePivot.position.set(0.46, 0.22, 0.92);
     const rightEyeball = new THREE.Mesh(eyeGeo, eyeballMat);
     rightEyePivot.add(rightEyeball);
-    headGroup.add(rightEyePivot);
+    proceduralGroup.add(rightEyePivot);
 
     // 3D Eye Socket Recess Rims (Contoured black ring around each eye)
     const socketRimGeo = new THREE.TorusGeometry(eyeRadius + 0.02, 0.035, 16, 32);
     const leftRim = new THREE.Mesh(socketRimGeo, darkTrimMat);
     leftRim.position.set(-0.46, 0.22, 0.94);
     leftRim.rotation.y = Math.PI * 0.12;
-    headGroup.add(leftRim);
+    proceduralGroup.add(leftRim);
 
     const rightRim = new THREE.Mesh(socketRimGeo, darkTrimMat);
     rightRim.position.set(0.46, 0.22, 0.94);
     rightRim.rotation.y = -Math.PI * 0.12;
-    headGroup.add(rightRim);
+    proceduralGroup.add(rightRim);
 
     // -------------------------------------------------------------------------
     // 4. TRUE 3D BLINKING EYELIDS (Mechanical robotic eyelids that close over eyes)
@@ -464,13 +502,13 @@ export default function RobotAvatar({
     const leftEyelid = new THREE.Mesh(eyelidGeo, beigeFaceMat);
     leftEyelid.position.set(-0.46, 0.22, 0.92);
     leftEyelid.rotation.x = -Math.PI * 0.5; // Start open (retracted above eye)
-    headGroup.add(leftEyelid);
+    proceduralGroup.add(leftEyelid);
 
     // Right Upper Eyelid
     const rightEyelid = new THREE.Mesh(eyelidGeo, beigeFaceMat);
     rightEyelid.position.set(0.46, 0.22, 0.92);
     rightEyelid.rotation.x = -Math.PI * 0.5; // Start open
-    headGroup.add(rightEyelid);
+    proceduralGroup.add(rightEyelid);
 
     // -------------------------------------------------------------------------
     // 5. FLOPPY CHOCOLATE-BROWN EARS (Paddle Shape with Hinges)
@@ -506,7 +544,7 @@ export default function RobotAvatar({
 
     const leftEarMesh = new THREE.Mesh(earGeo, brownEarMat);
     leftEarPivot.add(leftEarMesh);
-    headGroup.add(leftEarPivot);
+    proceduralGroup.add(leftEarPivot);
 
     // Right Ear Unit
     const rightEarPivot = new THREE.Group();
@@ -519,14 +557,14 @@ export default function RobotAvatar({
     const rightEarMesh = new THREE.Mesh(earGeo, brownEarMat);
     rightEarMesh.scale.x = -1;
     rightEarPivot.add(rightEarMesh);
-    headGroup.add(rightEarPivot);
+    proceduralGroup.add(rightEarPivot);
 
     // -------------------------------------------------------------------------
     // 6. BACK-HALO CELESTIAL RINGS & AURA PARTICLES (BEHIND HEAD - ZERO LINES OVER NOSE)
     // -------------------------------------------------------------------------
     const haloGroup = new THREE.Group();
     haloGroup.position.set(0, 0.05, -0.65); // Safely positioned behind skull and ears
-    headGroup.add(haloGroup);
+    proceduralGroup.add(haloGroup);
 
     const ring1Geo = new THREE.TorusGeometry(1.65, 0.012, 16, 80);
     const ring1Mat = new THREE.MeshBasicMaterial({
@@ -584,7 +622,7 @@ export default function RobotAvatar({
       blending: THREE.AdditiveBlending
     });
     const particles = new THREE.Points(particleGeo, particleMat);
-    headGroup.add(particles);
+    proceduralGroup.add(particles);
 
     // -------------------------------------------------------------------------
     // 7. LIGHTING SETUP

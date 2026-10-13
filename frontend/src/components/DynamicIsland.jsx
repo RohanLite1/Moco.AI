@@ -84,11 +84,10 @@ export default function DynamicIsland({
   ];
 
   const expressions = [
-    { id: 'idle', label: 'Idle', icon: Radio },
+    { id: 'happy', label: 'Happy', icon: Smile },
     { id: 'listening', label: 'Listen', icon: Mic },
     { id: 'thinking', label: 'Think', icon: Brain },
-    { id: 'speaking', label: 'Speak', icon: Volume2 },
-    { id: 'happy', label: 'Happy', icon: Smile }
+    { id: 'speaking', label: 'Speak', icon: Volume2 }
   ];
 
   const handleTogglePin = async (e) => {
@@ -143,8 +142,8 @@ export default function DynamicIsland({
                   {aiStatus === 'thinking' && 'Analyzing query...'}
                   {aiStatus === 'speaking' && 'Streaming voice audio...'}
                   {aiStatus === 'listening' && 'Listening attentively...'}
-                  {aiStatus === 'happy' && 'Ready for your command!'}
-                  {aiStatus === 'idle' && 'AIBO_UNIT_01 • Click to expand'}
+                  {aiStatus === 'happy' && 'Joyful & Ready!'}
+                  {(aiStatus === 'ready' || aiStatus === 'idle' || !aiStatus) && 'Moco Online • Click to expand'}
                 </div>
               </div>
             </div>
@@ -188,7 +187,7 @@ export default function DynamicIsland({
                 title="Voice Listen Toggle"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onStatusChange?.(aiStatus === 'listening' ? 'idle' : 'listening');
+                  onStatusChange?.(aiStatus === 'listening' ? 'ready' : 'listening');
                 }}
               >
                 <Mic size={14} />
@@ -220,7 +219,7 @@ export default function DynamicIsland({
                 <span>Moco.AI</span>
                 <div className="island-status-pill">
                   <span className={`pill-status-dot ${aiStatus}`} />
-                  <span>{aiStatus.toUpperCase()}</span>
+                  <span>{(aiStatus === 'idle' || aiStatus === 'ready' || !aiStatus) ? 'ONLINE' : aiStatus.toUpperCase()}</span>
                 </div>
               </div>
 
@@ -299,7 +298,7 @@ export default function DynamicIsland({
                     theme={activeTheme}
                     onRobotClick={() => {
                       onStatusChange?.('happy');
-                      setTimeout(() => onStatusChange?.('idle'), 2500);
+                      setTimeout(() => onStatusChange?.('ready'), 2500);
                     }}
                   />
                 </div>

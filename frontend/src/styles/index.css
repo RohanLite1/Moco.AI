@@ -37,6 +37,10 @@ body {
   justify-content: center;
   font-family: var(--font-main);
   color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
 }
 
 #root {

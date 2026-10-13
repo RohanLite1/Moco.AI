@@ -9,7 +9,7 @@ import { api } from './services/api';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('chat');
-  const [aiStatus, setAiStatus] = useState('idle');
+  const [aiStatus, setAiStatus] = useState('ready');
 
   useEffect(() => {
     // Listen to AI status events (idle, thinking, speaking, etc.) to animate the 3D Robot

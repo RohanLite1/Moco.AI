@@ -150,29 +150,13 @@ function createChassisTexture() {
     ctx.ellipse(0, 0, s.rx, s.ry, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Subtle cybernetic edge trim / seam around each spot
-    ctx.strokeStyle = 'rgba(6, 182, 212, 0.45)';
-    ctx.lineWidth = 1.8;
-    ctx.setLineDash([6, 3]);
-    ctx.beginPath();
-    ctx.ellipse(0, 0, s.rx + 3, s.ry + 3, 0, 0, Math.PI * 2);
-    ctx.stroke();
-
     ctx.restore();
   });
-
-  // Subtle cyber panel seams
-  ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
-  ctx.lineWidth = 1.5;
-  ctx.setLineDash([]);
-  ctx.beginPath();
-  ctx.arc(256, 256, 185, 0, Math.PI);
-  ctx.stroke();
 
   return new THREE.CanvasTexture(canvas);
 }
 
-// 3. Procedural Champagne Ceramic Faceplate Texture with Cheek Freckles
+// 3. Procedural Champagne Ceramic Faceplate Texture
 function createFaceplateTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
@@ -191,7 +175,7 @@ function createFaceplateTexture() {
     ctx.fillRect(x, y, 2, 2);
   }
 
-  // Dalmatian Eye Patch Spot over right brow on faceplate
+  // Soft Dalmatian Eye Patch Spot over right brow on faceplate
   ctx.save();
   ctx.translate(340, 205);
   ctx.rotate(0.28);
@@ -199,26 +183,7 @@ function createFaceplateTexture() {
   ctx.beginPath();
   ctx.ellipse(0, 0, 48, 38, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
-  ctx.lineWidth = 1.6;
-  ctx.setLineDash([5, 3]);
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 51, 41, 0, 0, Math.PI * 2);
-  ctx.stroke();
   ctx.restore();
-
-  // Cute Whisker Freckle Spots on Cheek & Snout Pads
-  const freckles = [
-    { x: 165, y: 310, r: 4.5 }, { x: 185, y: 325, r: 4 }, { x: 155, y: 335, r: 4.5 }, { x: 175, y: 345, r: 3.5 },
-    { x: 347, y: 310, r: 4.5 }, { x: 327, y: 325, r: 4 }, { x: 357, y: 335, r: 4.5 }, { x: 337, y: 345, r: 3.5 }
-  ];
-
-  ctx.fillStyle = '#4a3b32';
-  freckles.forEach((f) => {
-    ctx.beginPath();
-    ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
-    ctx.fill();
-  });
 
   // Subtle contour highlight
   const grad = ctx.createLinearGradient(0, 0, 0, 512);
@@ -376,90 +341,132 @@ export default function RobotAvatar({
     const snoutMesh = new THREE.Mesh(snoutGeo, beigeFaceMat);
     headGroup.add(snoutMesh);
 
-    // Black Sensor Button Nose
+
+    // -------------------------------------------------------------------------
+    // 2. CANINE SNOUT, WHISKER PADS & NOSE SCULPTURE (MATCHING REFERENCE IMAGE)
+    // -------------------------------------------------------------------------
+    // Dual Rounded Whisker Pad Pillows (Left & Right cheeks flanking the nose)
+    const whiskerPadGeo = new THREE.SphereGeometry(0.28, 24, 24);
+    whiskerPadGeo.scale(1.22, 0.90, 1.08);
+
+    const leftPadMesh = new THREE.Mesh(whiskerPadGeo, beigeFaceMat);
+    leftPadMesh.position.set(-0.20, -0.19, 1.18);
+    leftPadMesh.rotation.set(-0.06, 0.14, -0.04);
+    headGroup.add(leftPadMesh);
+
+    const rightPadMesh = new THREE.Mesh(whiskerPadGeo, beigeFaceMat);
+    rightPadMesh.position.set(0.20, -0.19, 1.18);
+    rightPadMesh.rotation.set(-0.06, -0.14, 0.04);
+    headGroup.add(rightPadMesh);
+
+    // Sculpted Canine Button Nose
     const noseGeo = new THREE.SphereGeometry(0.18, 24, 24);
-    noseGeo.scale(1.25, 0.92, 0.95);
-    noseGeo.translate(0, -0.06, 1.38);
+    noseGeo.scale(1.25, 0.88, 0.95);
+    noseGeo.translate(0, -0.05, 1.38);
     const noseMesh = new THREE.Mesh(noseGeo, darkTrimMat);
     headGroup.add(noseMesh);
 
+    // Canine Nostril Cavities (Left and Right)
+    const nostrilGeo = new THREE.SphereGeometry(0.042, 16, 16);
+    nostrilGeo.scale(1.18, 0.72, 0.82);
+    const nostrilMat = new THREE.MeshBasicMaterial({ color: 0x020617 });
+
+    const leftNostril = new THREE.Mesh(nostrilGeo, nostrilMat);
+    leftNostril.position.set(-0.07, -0.075, 1.48);
+    headGroup.add(leftNostril);
+
+    const rightNostril = new THREE.Mesh(nostrilGeo, nostrilMat);
+    rightNostril.position.set(0.07, -0.075, 1.48);
+    headGroup.add(rightNostril);
+
     // -------------------------------------------------------------------------
-    // 3. MOUSTACHE, DEFINED LIPS & ARTICULATED TONGUE
+    // 3. WHISKER FOLLICLE DOTS & THIN HAIR-LIKE WHISKERS (ON BOTH SIDES AT DISTANCE)
     // -------------------------------------------------------------------------
-    // --- CYBER MOUSTACHE & WHISKER PADS ---
-    const moustacheShape = new THREE.Shape();
-    moustacheShape.moveTo(0, 0);
-    moustacheShape.bezierCurveTo(0.12, 0.08, 0.28, 0.02, 0.36, -0.08);
-    moustacheShape.bezierCurveTo(0.25, -0.16, 0.10, -0.12, 0, -0.06);
-    moustacheShape.closePath();
+    // Follicle Pores / Dots Pattern on both sides of the nose (as in reference image)
+    const follicleDotGeo = new THREE.SphereGeometry(0.015, 8, 8);
+    follicleDotGeo.scale(1.0, 1.0, 0.35);
 
-    const moustacheGeo = new THREE.ExtrudeGeometry(moustacheShape, {
-      depth: 0.06,
-      bevelEnabled: true,
-      bevelSegments: 3,
-      bevelSize: 0.02,
-      bevelThickness: 0.02
-    });
-
-    const leftMoustache = new THREE.Mesh(moustacheGeo, darkTrimMat);
-    leftMoustache.position.set(-0.06, -0.14, 1.34);
-    leftMoustache.rotation.set(-0.15, 0.2, 0.1);
-    headGroup.add(leftMoustache);
-
-    const rightMoustache = new THREE.Mesh(moustacheGeo, darkTrimMat);
-    rightMoustache.scale.x = -1;
-    rightMoustache.position.set(0.06, -0.14, 1.34);
-    rightMoustache.rotation.set(-0.15, -0.2, -0.1);
-    headGroup.add(rightMoustache);
-
-    // Whisker Pores / Micro Nodes & Extended Whisker Hairs on Snout
-    const whiskerNodeGeo = new THREE.SphereGeometry(0.022, 8, 8);
-    const whiskerHairGeo = new THREE.CylinderGeometry(0.005, 0.002, 0.38, 8);
-    whiskerHairGeo.translate(0, 0.19, 0); // Center pivot at hair base
-
-    const whiskerPositions = [
-      { pos: { x: -0.28, y: -0.12, z: 1.28 }, rot: [0.12, 0.62, -0.32] },
-      { pos: { x: -0.36, y: -0.16, z: 1.22 }, rot: [0.0, 0.82, -0.05] },
-      { pos: { x: -0.26, y: -0.22, z: 1.24 }, rot: [-0.14, 0.62, 0.22] }
+    // Distinct dot pattern on left cheek pad (at distance from center nose)
+    const leftFollicleDots = [
+      // Top row (3 dots)
+      { x: -0.18, y: -0.14, z: 1.35 },
+      { x: -0.26, y: -0.16, z: 1.31 },
+      { x: -0.34, y: -0.19, z: 1.26 },
+      // Lower row (4 dots cluster)
+      { x: -0.20, y: -0.22, z: 1.32 },
+      { x: -0.28, y: -0.24, z: 1.28 },
+      { x: -0.36, y: -0.26, z: 1.22 },
+      { x: -0.42, y: -0.27, z: 1.16 }
     ];
 
-    whiskerPositions.forEach(({ pos, rot }) => {
-      // Left Pore Node & Whisker
-      const nodeL = new THREE.Mesh(whiskerNodeGeo, darkTrimMat);
-      nodeL.position.set(pos.x, pos.y, pos.z);
-      headGroup.add(nodeL);
+    leftFollicleDots.forEach((pos) => {
+      // Left dot
+      const dotL = new THREE.Mesh(follicleDotGeo, darkTrimMat);
+      dotL.position.set(pos.x, pos.y, pos.z);
+      headGroup.add(dotL);
 
-      const whiskerL = new THREE.Mesh(whiskerHairGeo, darkTrimMat);
-      whiskerL.position.set(pos.x, pos.y, pos.z);
-      whiskerL.rotation.set(rot[0], rot[1], rot[2]);
-      headGroup.add(whiskerL);
-
-      // Right Pore Node & Whisker (Mirrored)
-      const nodeR = new THREE.Mesh(whiskerNodeGeo, darkTrimMat);
-      nodeR.position.set(-pos.x, pos.y, pos.z);
-      headGroup.add(nodeR);
-
-      const whiskerR = new THREE.Mesh(whiskerHairGeo, darkTrimMat);
-      whiskerR.position.set(-pos.x, pos.y, pos.z);
-      whiskerR.rotation.set(rot[0], -rot[1], -rot[2]);
-      headGroup.add(whiskerR);
+      // Right dot (mirrored)
+      const dotR = new THREE.Mesh(follicleDotGeo, darkTrimMat);
+      dotR.position.set(-pos.x, pos.y, pos.z);
+      headGroup.add(dotR);
     });
 
-    // --- DEFINED UPPER & LOWER LIPS ---
-    // Philtrum vertical cleft from nose to upper lip
-    const philtrumGeo = new THREE.CylinderGeometry(0.016, 0.016, 0.20, 12);
-    philtrumGeo.translate(0, -0.18, 1.33);
-    const philtrumMesh = new THREE.Mesh(philtrumGeo, darkTrimMat);
-    headGroup.add(philtrumMesh);
+    // Thin Hair-like Moustache Whiskers sprouting from both sides at distance
+    const whiskerHairMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      metalness: 0.45,
+      roughness: 0.25
+    });
 
-    // Sculpted Upper Lip Rim (Curved mustache-mouth arch)
-    const upperLipGeo = new THREE.TorusGeometry(0.26, 0.032, 16, 32, Math.PI);
-    upperLipGeo.rotateX(Math.PI * 0.42);
-    upperLipGeo.translate(0, -0.28, 1.10);
-    const upperLipMesh = new THREE.Mesh(upperLipGeo, darkTrimMat);
-    headGroup.add(upperLipMesh);
+    const whiskerConfigs = [
+      {
+        pos: { x: -0.22, y: -0.15, z: 1.33 },
+        length: 0.52,
+        rot: [0.12, 0.72, -0.22]
+      },
+      {
+        pos: { x: -0.30, y: -0.17, z: 1.29 },
+        length: 0.62,
+        rot: [0.04, 0.88, -0.08]
+      },
+      {
+        pos: { x: -0.24, y: -0.22, z: 1.30 },
+        length: 0.68,
+        rot: [-0.05, 0.82, 0.12]
+      },
+      {
+        pos: { x: -0.32, y: -0.24, z: 1.25 },
+        length: 0.58,
+        rot: [-0.15, 0.76, 0.26]
+      },
+      {
+        pos: { x: -0.38, y: -0.26, z: 1.19 },
+        length: 0.48,
+        rot: [-0.22, 0.68, 0.38]
+      }
+    ];
 
-    // Hinged Lower Jaw Pivot
+    const whiskerHairGeos = [];
+    whiskerConfigs.forEach(({ pos, length, rot }) => {
+      // Ultra-thin tapered whisker hair: base 0.003, tip 0.001
+      const hairGeo = new THREE.CylinderGeometry(0.001, 0.0032, length, 8);
+      hairGeo.translate(0, length / 2, 0); // Origin at root
+      whiskerHairGeos.push(hairGeo);
+
+      // Left whisker hair
+      const hairL = new THREE.Mesh(hairGeo, whiskerHairMat);
+      hairL.position.set(pos.x, pos.y, pos.z);
+      hairL.rotation.set(rot[0], rot[1], rot[2]);
+      headGroup.add(hairL);
+
+      // Right whisker hair (mirrored)
+      const hairR = new THREE.Mesh(hairGeo, whiskerHairMat);
+      hairR.position.set(-pos.x, pos.y, pos.z);
+      hairR.rotation.set(rot[0], -rot[1], -rot[2]);
+      headGroup.add(hairR);
+    });
+
+    // --- ARTICULATED LOWER JAW & PUPPY CHIN ---
     const jawPivot = new THREE.Group();
     jawPivot.position.set(0, -0.32, 0.78);
 
@@ -471,7 +478,7 @@ export default function RobotAvatar({
     jawPivot.add(chinMesh);
 
     // Sculpted Lower Lip Rim on Jaw
-    const lowerLipGeo = new THREE.TorusGeometry(0.22, 0.028, 16, 32, Math.PI);
+    const lowerLipGeo = new THREE.TorusGeometry(0.22, 0.024, 16, 32, Math.PI);
     lowerLipGeo.rotateX(-Math.PI * 0.42);
     lowerLipGeo.translate(0, 0.12, 0.38);
     const lowerLipMesh = new THREE.Mesh(lowerLipGeo, darkTrimMat);
@@ -639,28 +646,32 @@ export default function RobotAvatar({
     headGroup.add(rightEarPivot);
 
     // -------------------------------------------------------------------------
-    // 6. GYROSCOPIC HOLOGRAPHIC RINGS & AURA PARTICLES
+    // 6. BACK-HALO CELESTIAL RINGS & AURA PARTICLES (BEHIND HEAD - ZERO LINES OVER NOSE)
     // -------------------------------------------------------------------------
-    const ring1Geo = new THREE.TorusGeometry(1.65, 0.014, 16, 80);
+    const haloGroup = new THREE.Group();
+    haloGroup.position.set(0, 0.05, -0.65); // Safely positioned behind skull and ears
+    headGroup.add(haloGroup);
+
+    const ring1Geo = new THREE.TorusGeometry(1.65, 0.012, 16, 80);
     const ring1Mat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
       transparent: true,
-      opacity: 0.5
+      opacity: 0.45
     });
     const ring1 = new THREE.Mesh(ring1Geo, ring1Mat);
     ring1.rotation.x = Math.PI / 3;
-    headGroup.add(ring1);
+    haloGroup.add(ring1);
 
-    const ring2Geo = new THREE.TorusGeometry(1.85, 0.012, 16, 80);
+    const ring2Geo = new THREE.TorusGeometry(1.85, 0.010, 16, 80);
     const ring2Mat = new THREE.MeshBasicMaterial({
       color: 0xa855f7,
       transparent: true,
-      opacity: 0.35
+      opacity: 0.3
     });
     const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
     ring2.rotation.y = Math.PI / 4;
     ring2.rotation.x = -Math.PI / 5;
-    headGroup.add(ring2);
+    haloGroup.add(ring2);
 
     // Particles
     const particleCount = compact ? 80 : 220;
@@ -932,12 +943,11 @@ export default function RobotAvatar({
       skullGeo.dispose();
       faceGeo.dispose();
       snoutGeo.dispose();
+      whiskerPadGeo.dispose();
       noseGeo.dispose();
-      moustacheGeo.dispose();
-      whiskerNodeGeo.dispose();
-      whiskerHairGeo.dispose();
-      philtrumGeo.dispose();
-      upperLipGeo.dispose();
+      nostrilGeo.dispose();
+      follicleDotGeo.dispose();
+      whiskerHairGeos.forEach((g) => g.dispose());
       chinGeo.dispose();
       lowerLipGeo.dispose();
       mouthInteriorGeo.dispose();

@@ -5,9 +5,11 @@ import {
   RotateCcw,
   FastForward,
   Flame,
-  Timer as TimerIcon
+  Timer as TimerIcon,
+  Clock
 } from 'lucide-react';
 import { api } from '../services/api';
+import '../styles/pomodoro.css';
 
 export default function PomodoroWidget() {
   const [mode, setMode] = useState('focus'); // 'focus' | 'break'
@@ -15,6 +17,20 @@ export default function PomodoroWidget() {
   const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [sessions, setSessions] = useState(0);
+
+  // Live real-time system clock for header digital display
+  const [currentTime, setCurrentTime] = useState(() => {
+    const d = new Date();
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  });
+
+  useEffect(() => {
+    const clockTimer = setInterval(() => {
+      const d = new Date();
+      setCurrentTime(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    }, 1000);
+    return () => clearInterval(clockTimer);
+  }, []);
 
   // Timer Tick Engine
   useEffect(() => {
@@ -74,11 +90,11 @@ export default function PomodoroWidget() {
   const seconds = timeLeft % 60;
   const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
-  // Circular timer geometry (Exact 220px x 220px)
+  // Circular timer geometry (220px x 220px)
   const circleSize = 220;
-  const strokeWidth = 9;
-  const radius = (circleSize - strokeWidth) / 2; // 105.5
-  const circumference = 2 * Math.PI * radius; // ~662.87
+  const strokeWidth = 8;
+  const radius = (circleSize - strokeWidth) / 2; // 106
+  const circumference = 2 * Math.PI * radius; // ~666
   const progress = duration > 0 ? (duration - timeLeft) / duration : 0;
   const strokeDashoffset = circumference - progress * circumference;
 
@@ -90,39 +106,38 @@ export default function PomodoroWidget() {
   ];
 
   return (
-    <div className="w-full flex items-center justify-center py-2 px-1 select-none">
+    <div className="pomo-container">
       {/* =================================================================== */}
-      {/* 1. OVERALL CONTAINER (COMPACT PREMIUM DASHBOARD CARD)               */}
+      {/* 1. OVERALL CONTAINER (PREMIUM DASHBOARD CARD)                       */}
       {/* =================================================================== */}
-      <div
-        className="w-full max-w-[440px] rounded-[20px] bg-[#FFFFFF] border border-[#E8ECF4] flex flex-col gap-5 p-6 transition-all duration-300"
-        style={{
-          boxSizing: 'border-box',
-          boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 4px 12px -2px rgba(0, 0, 0, 0.02)',
-          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-        }}
-      >
+      <div className="pomo-card">
         {/* ----------------------------------------------------------------- */}
-        {/* 2. HEADER: TIMER ICON, HEADING, SUBTITLE                          */}
+        {/* 2. HEADER: ICON, TITLE, SUBTITLE & REAL-TIME DIGITAL CLOCK        */}
         {/* ----------------------------------------------------------------- */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#ECFEFF] border border-[#CFFAFE] flex items-center justify-center text-[#0891B2] shrink-0">
-            <TimerIcon size={20} strokeWidth={2.2} />
+        <div className="pomo-header">
+          <div className="pomo-header-left">
+            <div className="pomo-icon-badge">
+              <TimerIcon size={20} strokeWidth={2.2} />
+            </div>
+            <div>
+              <h2 className="pomo-header-title">Focus Session</h2>
+              <p className="pomo-header-subtitle">
+                {isRunning ? 'Session Active' : 'Ready to Focus'}
+              </p>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <h2 className="text-[22px] sm:text-[24px] font-semibold text-[#111827] tracking-tight leading-tight">
-              Focus Session
-            </h2>
-            <p className="text-[14px] text-[#64748B] font-normal leading-normal mt-0.5">
-              {isRunning ? 'Session Active' : 'Ready to Focus'}
-            </p>
+
+          {/* Live System Digital Clock Badge */}
+          <div className="pomo-live-clock-badge" title="Current Local Time">
+            <Clock size={12} strokeWidth={2} />
+            <span>{currentTime}</span>
           </div>
         </div>
 
         {/* ----------------------------------------------------------------- */}
         {/* 3. MODE SELECTOR (SEGMENTED CONTROL COMPONENT)                    */}
         {/* ----------------------------------------------------------------- */}
-        <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-[#F1F5F9] border border-[#E8ECF4]">
+        <div className="pomo-mode-selector">
           {presets.map((preset) => {
             const isActive =
               mode === preset.modeType && duration === preset.mins * 60;
@@ -132,11 +147,7 @@ export default function PomodoroWidget() {
                 key={preset.label}
                 type="button"
                 onClick={() => setPreset(preset.mins, preset.modeType)}
-                className={`py-1.5 px-1 rounded-lg text-[12px] sm:text-[13px] font-medium tracking-tight transition-all duration-200 text-center truncate cursor-pointer ${
-                  isActive
-                    ? 'bg-[#ECFEFF] text-[#0E7490] font-semibold border border-[#A5F3FC] shadow-xs'
-                    : 'bg-transparent text-[#64748B] hover:text-[#111827] hover:bg-[#E2E8F0]/60 border border-transparent'
-                }`}
+                className={`pomo-mode-btn ${isActive ? 'active' : ''}`}
                 style={{
                   outline: 'none',
                   WebkitAppearance: 'none'
@@ -149,71 +160,130 @@ export default function PomodoroWidget() {
         </div>
 
         {/* ----------------------------------------------------------------- */}
-        {/* 4. CIRCULAR COUNTDOWN TIMER (220px x 220px)                       */}
+        {/* 4. CIRCULAR COUNTDOWN TIMER WITH DIGITAL CLOCK INSIDE             */}
         {/* ----------------------------------------------------------------- */}
-        <div className="flex items-center justify-center my-0.5">
-          <div
-            className="relative flex items-center justify-center rounded-full"
+        <div
+          className="pomo-circle-container"
+          style={{
+            position: 'relative',
+            width: `${circleSize}px`,
+            height: `${circleSize}px`,
+            margin: '0 auto',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxSizing: 'border-box'
+          }}
+        >
+          {/* Circular SVG Ring */}
+          <svg
+            className="pomo-circle-svg"
+            viewBox={`0 0 ${circleSize} ${circleSize}`}
             style={{
               width: `${circleSize}px`,
               height: `${circleSize}px`,
-              maxWidth: '65vw',
-              aspectRatio: '1 / 1'
+              transform: 'rotate(-90deg)',
+              display: 'block'
             }}
           >
-            <svg
-              className="w-full h-full -rotate-90 transform"
-              viewBox={`0 0 ${circleSize} ${circleSize}`}
+            <defs>
+              <linearGradient id="pomodoroProgressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#22D3EE" />
+                <stop offset="100%" stopColor="#6366F1" />
+              </linearGradient>
+            </defs>
+
+            {/* Muted Track Circle */}
+            <circle
+              cx={circleSize / 2}
+              cy={circleSize / 2}
+              r={radius}
+              className="pomo-track-circle"
+              strokeWidth={strokeWidth}
+              fill="transparent"
+            />
+
+            {/* Dynamic Progress Ring */}
+            <circle
+              cx={circleSize / 2}
+              cy={circleSize / 2}
+              r={radius}
+              stroke="url(#pomodoroProgressGradient)"
+              strokeWidth={strokeWidth}
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              fill="transparent"
+              className="pomo-progress-circle"
+              style={{
+                transition: 'stroke-dashoffset 0.6s ease',
+                filter: isRunning ? 'drop-shadow(0 2px 8px rgba(34, 211, 238, 0.35))' : 'none'
+              }}
+            />
+          </svg>
+
+          {/* =============================================================== */}
+          {/* DIGITAL CLOCK (CENTERED INSIDE CIRCLE)                          */}
+          {/* =============================================================== */}
+          <div
+            className="pomo-digital-clock"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              textAlign: 'center',
+              pointerEvents: 'none',
+              boxSizing: 'border-box'
+            }}
+          >
+            {/* Status indicator tag */}
+            <div
+              className="pomo-clock-status-tag"
+              style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
             >
-              <defs>
-                <linearGradient id="pomodoroProgressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#22D3EE" />
-                  <stop offset="100%" stopColor="#6366F1" />
-                </linearGradient>
-              </defs>
+              {isRunning ? (
+                <>
+                  <span className="pomo-clock-pulse-dot" />
+                  <span>FOCUSING</span>
+                </>
+              ) : (
+                <span>READY</span>
+              )}
+            </div>
 
-              {/* Muted Track Circle */}
-              <circle
-                cx={circleSize / 2}
-                cy={circleSize / 2}
-                r={radius}
-                stroke="#F1F5F9"
-                strokeWidth={strokeWidth}
-                fill="transparent"
-              />
+            {/* Prominent Digital Clock Digits */}
+            <div
+              className="pomo-digital-digits"
+              style={{
+                fontSize: '46px',
+                fontWeight: 700,
+                lineHeight: 1,
+                letterSpacing: '-1.5px',
+                fontFamily: "'JetBrains Mono', monospace",
+                fontVariantNumeric: 'tabular-nums'
+              }}
+            >
+              {formattedTime}
+            </div>
 
-              {/* Progress Ring with Cyan-to-Indigo Gradient */}
-              <circle
-                cx={circleSize / 2}
-                cy={circleSize / 2}
-                r={radius}
-                stroke="url(#pomodoroProgressGradient)"
-                strokeWidth={strokeWidth}
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-                fill="transparent"
-                className="transition-[stroke-dashoffset] duration-700 ease-out"
-                style={{
-                  filter: isRunning ? 'drop-shadow(0 2px 8px rgba(34, 211, 238, 0.25))' : 'none'
-                }}
-              />
-            </svg>
-
-            {/* Centered Countdown & Status Label */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-              <span
-                className="text-[44px] sm:text-[46px] font-bold text-[#111827] leading-none tracking-tight"
-                style={{
-                  fontVariantNumeric: 'tabular-nums',
-                  fontFeatureSettings: '"tnum"'
-                }}
-              >
-                {formattedTime}
-              </span>
-              <span className="text-[11px] font-bold tracking-[0.16em] uppercase text-[#0E7490] mt-2">
-                {mode === 'focus' ? 'FOCUS MODE' : 'BREAK MODE'}
-              </span>
+            {/* Digital Clock Mode Pill */}
+            <div
+              className="pomo-mode-pill"
+              style={{
+                marginTop: '8px',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase'
+              }}
+            >
+              {mode === 'focus' ? '⚡ FOCUS MODE' : '☕ BREAK MODE'}
             </div>
           </div>
         </div>
@@ -221,19 +291,19 @@ export default function PomodoroWidget() {
         {/* ----------------------------------------------------------------- */}
         {/* 5. SHORT SUPPORTING TEXT                                          */}
         {/* ----------------------------------------------------------------- */}
-        <p className="text-[13px] text-[#64748B] font-medium text-center -mt-2">
+        <p className="pomo-subtext">
           Stay present. Make progress.
         </p>
 
         {/* ----------------------------------------------------------------- */}
         {/* 6. PRIMARY TIMER CONTROLS                                         */}
         {/* ----------------------------------------------------------------- */}
-        <div className="flex items-center gap-2.5 w-full">
-          {/* Primary Button */}
+        <div className="pomo-controls-row">
+          {/* Primary Action Button */}
           <button
             type="button"
             onClick={toggleTimer}
-            className="flex-1 h-[44px] px-5 rounded-xl bg-[#111827] hover:bg-[#1F2937] active:bg-[#0F172A] text-[#FFFFFF] text-[13px] font-semibold tracking-wide flex items-center justify-center gap-2 transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:ring-offset-2 cursor-pointer"
+            className="pomo-btn-main"
             style={{
               border: 'none',
               outline: 'none',
@@ -257,7 +327,7 @@ export default function PomodoroWidget() {
           <button
             type="button"
             onClick={resetTimer}
-            className="w-[44px] h-[44px] rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] active:bg-[#E2E8F0] border border-[#E8ECF4] text-[#64748B] hover:text-[#111827] flex items-center justify-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#22D3EE] cursor-pointer shrink-0"
+            className="pomo-btn-action"
             title="Reset Timer"
             style={{
               outline: 'none',
@@ -271,7 +341,7 @@ export default function PomodoroWidget() {
           <button
             type="button"
             onClick={handleSkip}
-            className="w-[44px] h-[44px] rounded-xl bg-[#F8FAFC] hover:bg-[#F1F5F9] active:bg-[#E2E8F0] border border-[#E8ECF4] text-[#64748B] hover:text-[#111827] flex items-center justify-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#22D3EE] cursor-pointer shrink-0"
+            className="pomo-btn-action"
             title="Skip to Next"
             style={{
               outline: 'none',
@@ -285,33 +355,25 @@ export default function PomodoroWidget() {
         {/* ----------------------------------------------------------------- */}
         {/* 7. DAILY STREAK SECTION                                           */}
         {/* ----------------------------------------------------------------- */}
-        <div className="pt-3.5 border-t border-[#F1F5F9] flex items-center justify-between w-full">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#FFFBEB] border border-[#FEF3C7] flex items-center justify-center text-[#D97706] shrink-0">
+        <div className="pomo-streak-footer">
+          <div className="pomo-streak-left">
+            <div className="pomo-streak-badge">
               <Flame size={16} fill={sessions > 0 ? '#F59E0B' : 'none'} strokeWidth={2} />
             </div>
-            <div className="flex flex-col">
-              <span className="text-[12px] font-semibold text-[#111827]">
+            <div>
+              <div className="pomo-streak-text-title">
                 Today's Streak
-              </span>
-              <span className="text-[11px] text-[#64748B]">
+              </div>
+              <div className="pomo-streak-text-sub">
                 {sessions === 0
                   ? '0 sessions completed'
-                  : `${sessions} sessions completed`}
-              </span>
+                  : `${sessions} session${sessions === 1 ? '' : 's'} completed`}
+              </div>
             </div>
           </div>
 
-          <div className="flex items-baseline">
-            <span
-              className="text-[22px] font-bold text-[#111827]"
-              style={{
-                fontVariantNumeric: 'tabular-nums',
-                fontFeatureSettings: '"tnum"'
-              }}
-            >
-              {sessions}
-            </span>
+          <div className="pomo-streak-count">
+            {sessions}
           </div>
         </div>
       </div>

@@ -411,60 +411,6 @@ export default function RobotAvatar({
       headGroup.add(dotR);
     });
 
-    // Thin Hair-like Moustache Whiskers sprouting from both sides at distance
-    const whiskerHairMat = new THREE.MeshStandardMaterial({
-      color: 0x1e293b,
-      metalness: 0.45,
-      roughness: 0.25
-    });
-
-    const whiskerConfigs = [
-      {
-        pos: { x: -0.22, y: -0.15, z: 1.33 },
-        length: 0.52,
-        rot: [0.12, 0.72, -0.22]
-      },
-      {
-        pos: { x: -0.30, y: -0.17, z: 1.29 },
-        length: 0.62,
-        rot: [0.04, 0.88, -0.08]
-      },
-      {
-        pos: { x: -0.24, y: -0.22, z: 1.30 },
-        length: 0.68,
-        rot: [-0.05, 0.82, 0.12]
-      },
-      {
-        pos: { x: -0.32, y: -0.24, z: 1.25 },
-        length: 0.58,
-        rot: [-0.15, 0.76, 0.26]
-      },
-      {
-        pos: { x: -0.38, y: -0.26, z: 1.19 },
-        length: 0.48,
-        rot: [-0.22, 0.68, 0.38]
-      }
-    ];
-
-    const whiskerHairGeos = [];
-    whiskerConfigs.forEach(({ pos, length, rot }) => {
-      // Ultra-thin tapered whisker hair: base 0.003, tip 0.001
-      const hairGeo = new THREE.CylinderGeometry(0.001, 0.0032, length, 8);
-      hairGeo.translate(0, length / 2, 0); // Origin at root
-      whiskerHairGeos.push(hairGeo);
-
-      // Left whisker hair
-      const hairL = new THREE.Mesh(hairGeo, whiskerHairMat);
-      hairL.position.set(pos.x, pos.y, pos.z);
-      hairL.rotation.set(rot[0], rot[1], rot[2]);
-      headGroup.add(hairL);
-
-      // Right whisker hair (mirrored)
-      const hairR = new THREE.Mesh(hairGeo, whiskerHairMat);
-      hairR.position.set(-pos.x, pos.y, pos.z);
-      hairR.rotation.set(rot[0], -rot[1], -rot[2]);
-      headGroup.add(hairR);
-    });
 
     // --- ARTICULATED LOWER JAW & PUPPY CHIN ---
     const jawPivot = new THREE.Group();
@@ -947,7 +893,6 @@ export default function RobotAvatar({
       noseGeo.dispose();
       nostrilGeo.dispose();
       follicleDotGeo.dispose();
-      whiskerHairGeos.forEach((g) => g.dispose());
       chinGeo.dispose();
       lowerLipGeo.dispose();
       mouthInteriorGeo.dispose();

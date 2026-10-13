@@ -4,6 +4,7 @@
 @import './tasks.css';
 @import './music.css';
 @import './games.css';
+@import './chat.css';
 
 :root {
   --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;

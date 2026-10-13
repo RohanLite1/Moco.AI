@@ -17,10 +17,10 @@ import {
 import '../styles/music.css';
 
 const SOUND_LIBRARY = [
-  // COLUMN 1: FOCUS 🧠 (Real User Focus Audio Files)
+  // COLUMN 1: FOCUS (Real User Focus Audio Files)
   {
     category: 'focus',
-    categoryName: 'Focus 🧠',
+    categoryName: 'Focus',
     icon: Brain,
     tracks: [
       {
@@ -49,10 +49,10 @@ const SOUND_LIBRARY = [
       }
     ]
   },
-  // COLUMN 2: MOTIVATION ⚡
+  // COLUMN 2: MOTIVATION
   {
     category: 'motivation',
-    categoryName: 'Motivation ⚡',
+    categoryName: 'Motivation',
     icon: Zap,
     tracks: [
       {
@@ -81,10 +81,10 @@ const SOUND_LIBRARY = [
       }
     ]
   },
-  // COLUMN 3: RELAX 🌧️
+  // COLUMN 3: RELAX
   {
     category: 'relax',
-    categoryName: 'Relax 🌧️',
+    categoryName: 'Relax',
     icon: CloudRain,
     tracks: [
       {
@@ -113,10 +113,10 @@ const SOUND_LIBRARY = [
       }
     ]
   },
-  // COLUMN 4: REST 🌙
+  // COLUMN 4: REST
   {
     category: 'rest',
-    categoryName: 'Rest 🌙',
+    categoryName: 'Rest',
     icon: Moon,
     tracks: [
       {

@@ -54,7 +54,7 @@ export default function PomodoroWidget() {
       setDuration(nextDuration);
       setTimeLeft(nextDuration);
       api.notify(
-        'Focus Session Complete! 🎉',
+        'Focus Session Complete!',
         isLongBreak
           ? 'Great milestone! Take a 15-minute long recharge break.'
           : 'Nicely done! Enjoy a 5-minute break.'
@@ -63,7 +63,7 @@ export default function PomodoroWidget() {
       setMode('focus');
       setDuration(25 * 60);
       setTimeLeft(25 * 60);
-      api.notify('Break Complete ⚡', 'Ready for the next productive sprint? Let’s go!');
+      api.notify('Break Complete!', 'Ready for the next productive sprint? Let’s go!');
     }
   };
 
@@ -283,7 +283,7 @@ export default function PomodoroWidget() {
                 textTransform: 'uppercase'
               }}
             >
-              {mode === 'focus' ? '⚡ FOCUS MODE' : '☕ BREAK MODE'}
+              {mode === 'focus' ? 'FOCUS SESSION' : 'BREAK SESSION'}
             </div>
           </div>
         </div>

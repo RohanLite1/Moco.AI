@@ -1,0 +1,449 @@
+/* ========================================================================= */
+/* ARCADE GAMES WIDGET STYLES                                                */
+/* Neo-Minimalist Dashboard Theme with 2D iOS-like App Icons                 */
+/* ========================================================================= */
+
+.games-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.games-card {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 1px solid #e8ecf4;
+  border-radius: 20px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 4px 12px -2px rgba(0, 0, 0, 0.02);
+  transition: all 0.25s ease;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #111827;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Dark mode override when inside .dynamic-island-shell without theme-light */
+.theme-dark .games-card {
+  background: rgba(15, 23, 42, 0.88);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), 0 0 20px rgba(6, 182, 212, 0.08);
+}
+
+/* Header */
+.games-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.games-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.games-icon-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #ecfeff;
+  border: 1px solid #cffafe;
+  color: #0891b2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.theme-dark .games-icon-badge {
+  background: rgba(6, 182, 212, 0.15);
+  border-color: rgba(6, 182, 212, 0.35);
+  color: #22d3ee;
+}
+
+.games-header-title {
+  font-size: 19px;
+  font-weight: 600;
+  color: inherit;
+  line-height: 1.2;
+  letter-spacing: -0.3px;
+}
+
+.games-header-sub {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.theme-dark .games-header-sub {
+  color: #94a3b8;
+}
+
+.games-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  background: #ecfeff;
+  border: 1px solid #a5f3fc;
+  color: #0891b2;
+}
+
+.theme-dark .games-live-badge {
+  background: rgba(6, 182, 212, 0.18);
+  border-color: rgba(6, 182, 212, 0.4);
+  color: #22d3ee;
+}
+
+.games-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22d3ee;
+  box-shadow: 0 0 6px #22d3ee;
+  animation: pulseDot 1.4s infinite ease-in-out;
+}
+
+/* ========================================================================= */
+/* 2X2 GAME TILES GRID                                                       */
+/* ========================================================================= */
+.games-tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  width: 100%;
+  flex: 1;
+}
+
+@media (max-width: 620px) {
+  .games-tiles-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Individual Game Tile Card */
+.games-tile-card {
+  background: #f8fafc;
+  border: 1px solid #e8ecf4;
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+  text-align: left;
+  outline: none;
+  font-family: inherit;
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-dark .games-tile-card {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.games-tile-card:hover {
+  transform: translateY(-2px);
+  background: #ffffff;
+  border-color: #a5f3fc;
+  box-shadow: 0 10px 25px -4px rgba(8, 145, 178, 0.12), 0 4px 10px -2px rgba(0, 0, 0, 0.04);
+}
+
+.theme-dark .games-tile-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(34, 211, 238, 0.45);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(6, 182, 212, 0.15);
+}
+
+/* Tile Top: iOS App Icon & Category Tag */
+.games-tile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+/* ========================================================================= */
+/* 2D iOS-LIKE SQUIRCLE APP ICONS                                            */
+/* ========================================================================= */
+.games-ios-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12), inset 0 1px 1.5px rgba(255, 255, 255, 0.45);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.games-tile-card:hover .games-ios-icon {
+  transform: scale(1.05);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+}
+
+/* iOS Glass Highlight Sheen on Icon */
+.games-ios-icon::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-radius: 15px 15px 60% 60% / 15px 15px 15% 15%;
+  pointer-events: none;
+}
+
+/* Icon Gradients */
+.games-ios-icon.tetris {
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 55%, #8b5cf6 100%);
+}
+
+.games-ios-icon.chess {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #a855f7 100%);
+}
+
+.games-ios-icon.snake {
+  background: linear-gradient(135deg, #059669 0%, #10b981 50%, #06b6d4 100%);
+}
+
+.games-ios-icon.tictactoe {
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ef4444 100%);
+}
+
+/* Category Pill Tag */
+.games-tile-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 7px;
+  background: #ffffff;
+  border: 1px solid #e8ecf4;
+  color: #64748b;
+}
+
+.theme-dark .games-tile-tag {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+}
+
+/* Tile Middle: Title & Description */
+.games-tile-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.games-tile-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.25;
+  letter-spacing: -0.2px;
+}
+
+.theme-dark .games-tile-title {
+  color: #f8fafc;
+}
+
+.games-tile-card:hover .games-tile-title {
+  color: #0891b2;
+}
+
+.theme-dark .games-tile-card:hover .games-tile-title {
+  color: #22d3ee;
+}
+
+.games-tile-desc {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.theme-dark .games-tile-desc {
+  color: #94a3b8;
+}
+
+/* Tile Footer: Play Button Action */
+.games-tile-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid #e8ecf4;
+  width: 100%;
+}
+
+.theme-dark .games-tile-footer {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.games-tile-meta {
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #94a3b8;
+}
+
+.games-tile-play-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-family: inherit;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.theme-dark .games-tile-play-btn {
+  background: linear-gradient(135deg, #0891b2, #4f46e5);
+  box-shadow: 0 3px 10px rgba(8, 145, 178, 0.35);
+}
+
+.games-tile-card:hover .games-tile-play-btn {
+  background: #0891b2;
+  transform: translateX(2px);
+}
+
+.theme-dark .games-tile-card:hover .games-tile-play-btn {
+  background: linear-gradient(135deg, #06b6d4, #6366f1);
+  box-shadow: 0 4px 14px rgba(8, 145, 178, 0.5);
+}
+
+/* ========================================================================= */
+/* ACTIVE GAME SCREENS (HEADER, BOARD, CONTROLS)                             */
+/* ========================================================================= */
+.game-active-shell {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e8ecf4;
+  border-radius: 20px;
+  padding: 16px 20px;
+  box-sizing: border-box;
+  overflow: hidden;
+  gap: 12px;
+}
+
+.theme-dark .game-active-shell {
+  background: rgba(15, 23, 42, 0.88);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+}
+
+.game-active-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e8ecf4;
+}
+
+.theme-dark .game-active-nav {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.game-btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  border: 1px solid #e8ecf4;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  outline: none;
+  font-family: inherit;
+}
+
+.theme-dark .game-btn-back {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+}
+
+.game-btn-back:hover {
+  background: #e2e8f0;
+  color: #111827;
+}
+
+.theme-dark .game-btn-back:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.game-screen-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.theme-dark .game-screen-title {
+  color: #f8fafc;
+}
+
+.game-stats-pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: #ecfeff;
+  border: 1px solid #a5f3fc;
+  color: #0891b2;
+}
+
+.theme-dark .game-stats-pill {
+  background: rgba(6, 182, 212, 0.18);
+  border-color: rgba(6, 182, 212, 0.4);
+  color: #22d3ee;
+}

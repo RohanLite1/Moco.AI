@@ -30,8 +30,8 @@ async function createWindow() {
   // Setup backend IPC handlers
   setupIpcHandlers(mainWindow);
 
-  // Load URL (Vite dev server or build)
-  const isDev = process.env.NODE_ENV !== 'production';
+  // Load URL (Vite dev server in dev, or local index.html in production build)
+  const isDev = !app.isPackaged && process.env.NODE_ENV !== 'production';
   if (isDev) {
     // Wait briefly for Vite server if needed
     const loadDev = async (retries = 10) => {
@@ -47,7 +47,7 @@ async function createWindow() {
     };
     loadDev();
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../frontend/dist/index.html'));
+    mainWindow.loadFile(path.join(app.getAppPath(), 'frontend/dist/index.html'));
   }
 
   mainWindow.once('ready-to-show', () => {

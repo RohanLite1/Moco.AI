@@ -4,6 +4,7 @@
 .moco-data.json
 dist/
 dist-electron/
+release/
 
 # Logs
 logs

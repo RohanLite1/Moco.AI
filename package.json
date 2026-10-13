@@ -10,6 +10,7 @@
     "dev:frontend": "vite --config frontend/vite.config.js frontend",
     "dev:electron": "electron backend/main.js",
     "build:frontend": "vite build --config frontend/vite.config.js frontend",
+    "build:exe": "npm run build:frontend && electron-builder --win portable",
     "test:backend": "node backend/tests/test-runner.js",
     "test:backend:auto": "node backend/tests/test-runner.js --auto",
     "start": "electron backend/main.js"
@@ -27,6 +28,30 @@
     "concurrently": "^9.1.0",
     "cross-env": "^7.0.3",
     "electron": "^33.2.0",
+    "electron-builder": "^26.15.3",
     "vite": "^6.0.1"
+  },
+  "build": {
+    "appId": "com.moco.ai",
+    "productName": "Moco.AI",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "backend/**/*",
+      "shared/**/*",
+      "frontend/dist/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
   }
 }

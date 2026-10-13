@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import HudContainer from './components/HudContainer';
+import DynamicIsland from './components/DynamicIsland';
 import ChatWidget from './widgets/ChatWidget';
 import PomodoroWidget from './widgets/PomodoroWidget';
 import TodoWidget from './widgets/TodoWidget';
@@ -12,7 +12,7 @@ export default function App() {
   const [aiStatus, setAiStatus] = useState('idle');
 
   useEffect(() => {
-    // Listen to AI status events (thinking, speaking, idle) to animate the 3D Hologram Orb
+    // Listen to AI status events (idle, thinking, speaking, etc.) to animate the 3D Robot
     const cleanup = api.onAIStatus((status) => {
       setAiStatus(status);
     });
@@ -37,12 +37,13 @@ export default function App() {
   };
 
   return (
-    <HudContainer
+    <DynamicIsland
       activeTab={activeTab}
       setActiveTab={setActiveTab}
       aiStatus={aiStatus}
+      onStatusChange={setAiStatus}
     >
       {renderActiveWidget()}
-    </HudContainer>
+    </DynamicIsland>
   );
 }

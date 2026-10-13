@@ -1,0 +1,439 @@
+/* Dynamic Island & RoboDog HUD Styling with System Dark/Light Themes */
+
+:root {
+  /* Default / Dark Theme tokens */
+  --island-bg: rgba(9, 14, 28, 0.86);
+  --island-border: rgba(6, 182, 212, 0.28);
+  --island-border-hover: rgba(6, 182, 212, 0.55);
+  --island-glow: 0 16px 42px rgba(0, 0, 0, 0.72), 0 0 28px rgba(6, 182, 212, 0.16);
+  --island-glow-active: 0 22px 55px rgba(0, 0, 0, 0.85), 0 0 38px rgba(6, 182, 212, 0.32);
+  --island-text: #f8fafc;
+  --island-text-muted: #94a3b8;
+  --island-card-bg: rgba(255, 255, 255, 0.04);
+  --island-card-border: rgba(255, 255, 255, 0.08);
+  --island-waveform: #38bdf8;
+  --island-accent: #06b6d4;
+  --island-accent-purple: #a855f7;
+  --island-accent-emerald: #10b981;
+}
+
+/* Light Theme Overrides (Auto-applied based on system theme or toggle) */
+.theme-light {
+  --island-bg: rgba(248, 250, 252, 0.9);
+  --island-border: rgba(14, 165, 233, 0.28);
+  --island-border-hover: rgba(14, 165, 233, 0.6);
+  --island-glow: 0 16px 42px rgba(15, 23, 42, 0.14), 0 0 25px rgba(14, 165, 233, 0.14);
+  --island-glow-active: 0 22px 55px rgba(15, 23, 42, 0.22), 0 0 35px rgba(14, 165, 233, 0.25);
+  --island-text: #0f172a;
+  --island-text-muted: #475569;
+  --island-card-bg: rgba(15, 23, 42, 0.04);
+  --island-card-border: rgba(15, 23, 42, 0.08);
+  --island-waveform: #0284c7;
+  --island-accent: #0284c7;
+  --island-accent-purple: #9333ea;
+  --island-accent-emerald: #059669;
+}
+
+/* Screen Viewport */
+.dynamic-island-viewport {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 9999;
+  padding-top: 14px;
+}
+
+/* The Core Dynamic Island Shell */
+.dynamic-island-shell {
+  pointer-events: auto;
+  position: relative;
+  background: var(--island-bg);
+  backdrop-filter: blur(34px);
+  -webkit-backdrop-filter: blur(34px);
+  border: 1px solid var(--island-border);
+  box-shadow: var(--island-glow);
+  transition: all 0.44s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  user-select: none;
+  color: var(--island-text);
+}
+
+/* ========================================================================= */
+/* 1. WIDE COMPACT PILL STATE                                                */
+/* ========================================================================= */
+.dynamic-island-shell.pill {
+  width: 580px;
+  max-width: 94vw;
+  height: 56px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px 4px 6px;
+  cursor: pointer;
+}
+
+.dynamic-island-shell.pill:hover {
+  border-color: var(--island-border-hover);
+  box-shadow: var(--island-glow-active);
+  transform: translateY(2px) scale(1.015);
+}
+
+/* Pill Left Section: 3D RoboDog Face & Badge */
+.pill-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+}
+
+.pill-robot-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--island-card-bg);
+  border: 1px solid var(--island-border);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pill-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pill-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--island-text);
+  letter-spacing: 0.3px;
+}
+
+.pill-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--island-accent);
+  box-shadow: 0 0 8px var(--island-accent);
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+.pill-status-dot.thinking {
+  background: var(--island-accent-purple);
+  box-shadow: 0 0 8px var(--island-accent-purple);
+}
+
+.pill-status-dot.speaking {
+  background: var(--island-waveform);
+  box-shadow: 0 0 10px var(--island-waveform);
+  animation: pulseDot 0.8s infinite ease-in-out;
+}
+
+.pill-status-dot.happy {
+  background: var(--island-accent-emerald);
+  box-shadow: 0 0 8px var(--island-accent-emerald);
+}
+
+.pill-subtitle {
+  font-size: 10.5px;
+  font-family: var(--font-mono);
+  color: var(--island-text-muted);
+  letter-spacing: 0.4px;
+}
+
+/* Pill Center: Audio Soundwave Equalizer */
+.pill-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 26px;
+  padding: 0 14px;
+}
+
+.soundwave-bar {
+  width: 3px;
+  background: var(--island-waveform);
+  border-radius: 9999px;
+  transition: height 0.15s ease;
+  animation: soundwaveBounce 1.4s infinite ease-in-out;
+}
+
+@keyframes soundwaveBounce {
+  0%, 100% {
+    height: 4px;
+    opacity: 0.45;
+  }
+  50% {
+    height: 22px;
+    opacity: 1;
+  }
+}
+
+/* Pill Right: Telemetry & Actions */
+.pill-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pill-badge {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  background: var(--island-card-bg);
+  border: 1px solid var(--island-card-border);
+  color: var(--island-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pill-btn {
+  background: var(--island-card-bg);
+  border: 1px solid var(--island-card-border);
+  color: var(--island-text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pill-btn:hover {
+  background: rgba(6, 182, 212, 0.18);
+  border-color: var(--island-accent);
+  color: var(--island-accent);
+  transform: scale(1.08);
+}
+
+/* ========================================================================= */
+/* 2. EXPANDED DYNAMIC ISLAND STATE                                          */
+/* ========================================================================= */
+.dynamic-island-shell.expanded {
+  width: 1020px;
+  max-width: 95vw;
+  height: 620px;
+  max-height: 90vh;
+  border-radius: 28px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Island Header */
+.island-header {
+  height: 54px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--island-card-border);
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.island-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--island-text);
+}
+
+.island-status-pill {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--island-border);
+  background: var(--island-card-bg);
+  color: var(--island-accent);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Nav Tabs */
+.island-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--island-card-bg);
+  padding: 3px 4px;
+  border-radius: 12px;
+  border: 1px solid var(--island-card-border);
+}
+
+.island-tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--island-text-muted);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.island-tab-btn:hover {
+  color: var(--island-text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.island-tab-btn.active {
+  color: var(--island-accent);
+  background: rgba(6, 182, 212, 0.16);
+  font-weight: 600;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+}
+
+/* Island Top Controls */
+.island-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.island-control-btn {
+  background: var(--island-card-bg);
+  border: 1px solid var(--island-card-border);
+  color: var(--island-text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.island-control-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--island-text);
+}
+
+.island-control-btn.close:hover {
+  background: rgba(244, 63, 94, 0.18);
+  border-color: rgba(244, 63, 94, 0.4);
+  color: #fb7185;
+}
+
+/* Island Main Content Grid */
+.island-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 310px 1fr;
+  overflow: hidden;
+}
+
+/* Left: 3D RoboDog Stage & Expression Controls */
+.island-robot-deck {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px;
+  border-right: 1px solid var(--island-card-border);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.island-robot-stage {
+  width: 100%;
+  height: 290px;
+  position: relative;
+  border-radius: 20px;
+  background: radial-gradient(circle at center, rgba(6, 182, 212, 0.09) 0%, transparent 72%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Expression Bar */
+.island-expression-bar {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.expression-title {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--island-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.expression-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.expression-btn {
+  background: var(--island-card-bg);
+  border: 1px solid var(--island-card-border);
+  color: var(--island-text-muted);
+  padding: 7px 4px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.expression-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--island-text);
+}
+
+.expression-btn.active {
+  background: rgba(6, 182, 212, 0.18);
+  border-color: var(--island-accent);
+  color: var(--island-accent);
+  font-weight: 600;
+}
+
+/* Right: Active Widget Body */
+.island-widget-body {
+  padding: 18px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Animations */
+@keyframes pulseDot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 1;
+  }
+}

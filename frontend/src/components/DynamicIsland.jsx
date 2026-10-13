@@ -11,8 +11,6 @@ import {
   Gamepad2,
   Mic,
   Brain,
-  Volume2,
-  Smile,
   Radio,
   Minimize2,
   Sun,
@@ -248,10 +246,8 @@ export default function DynamicIsland({
   ];
 
   const expressions = [
-    { id: 'happy', label: 'Happy', icon: Smile },
     { id: 'listening', label: 'Listen', icon: Mic },
-    { id: 'thinking', label: 'Think', icon: Brain },
-    { id: 'speaking', label: 'Speak', icon: Volume2 }
+    { id: 'thinking', label: 'Think', icon: Brain }
   ];
 
   const handleTogglePin = async (e) => {

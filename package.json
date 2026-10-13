@@ -1,0 +1,30 @@
+{
+  "name": "moco-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Desktop AI HUD Assistant with 3D visuals and productivity widgets",
+  "main": "backend/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k \"npm run dev:frontend\" \"npm run dev:electron\"",
+    "dev:frontend": "vite --config frontend/vite.config.js frontend",
+    "dev:electron": "cross-env WAIT_FOR_VITE=1 node backend/main.js",
+    "build:frontend": "vite build --config frontend/vite.config.js frontend",
+    "start": "node backend/main.js"
+  },
+  "dependencies": {
+    "@google/genai": "^2.29.0",
+    "dotenv": "^16.4.7",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.0",
+    "vite": "^6.0.1"
+  }
+}

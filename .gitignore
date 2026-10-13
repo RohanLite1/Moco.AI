@@ -1,3 +1,10 @@
+# Environment and local data
+.env
+.env.*
+.moco-data.json
+dist/
+dist-electron/
+
 # Logs
 logs
 *.log

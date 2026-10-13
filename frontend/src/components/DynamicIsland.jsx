@@ -33,9 +33,11 @@ export default function DynamicIsland({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [voiceStatusText, setVoiceStatusText] = useState('');
   const recognitionRef = useRef(null);
+  const latestTranscriptRef = useRef('');
 
-  // Initialize Speech Recognition
+  // Initialize Speech Recognition once without tearing down on each transcript update
   useEffect(() => {
     const SpeechRecognition =
       typeof window !== 'undefined' &&
@@ -49,53 +51,72 @@ export default function DynamicIsland({
     recognition.lang = 'en-US';
 
     recognition.onstart = () => {
-      onStatusChange?.('listening');
+      latestTranscriptRef.current = '';
       setVoiceTranscript('Listening...');
+      setVoiceStatusText('');
+      onStatusChange?.('listening');
     };
 
     recognition.onresult = (event) => {
-      let text = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        text += event.results[i][0].transcript;
+      let fullText = '';
+      for (let i = 0; i < event.results.length; i++) {
+        fullText += event.results[i][0].transcript;
       }
-      setVoiceTranscript(text);
+      latestTranscriptRef.current = fullText;
+      setVoiceTranscript(fullText);
+      setVoiceStatusText('');
     };
 
     recognition.onerror = (e) => {
-      console.warn('Voice notice:', e.error);
+      console.warn('Voice recognition note:', e.error);
       onStatusChange?.('idle');
       setVoiceTranscript('');
+      setVoiceStatusText('');
     };
 
     recognition.onend = async () => {
-      const finalCmd = voiceTranscript.trim();
+      const finalCmd = latestTranscriptRef.current.trim();
       if (finalCmd && finalCmd !== 'Listening...') {
         onStatusChange?.('thinking');
+        setVoiceStatusText(`Routing: "${finalCmd}"...`);
         try {
           const res = await api.processVoiceCommand(finalCmd);
           if (res?.action === 'NAVIGATE' && res?.target) {
             setActiveTab?.(res.target);
+            setVoiceStatusText(`Switched to ${res.target}`);
             onStatusChange?.('happy');
-            setTimeout(() => onStatusChange?.('idle'), 2500);
+            setTimeout(() => {
+              onStatusChange?.('idle');
+              setVoiceStatusText('');
+              setVoiceTranscript('');
+            }, 3000);
           } else {
+            setVoiceStatusText(res?.reply ? `"${res.reply}"` : `Done`);
             onStatusChange?.('speaking');
-            setTimeout(() => onStatusChange?.('idle'), 3000);
+            setTimeout(() => {
+              onStatusChange?.('idle');
+              setVoiceStatusText('');
+              setVoiceTranscript('');
+            }, 3500);
           }
         } catch (err) {
           console.error('Voice routing error:', err);
           onStatusChange?.('idle');
+          setVoiceTranscript('');
+          setVoiceStatusText('');
         }
       } else {
         onStatusChange?.('idle');
+        setVoiceTranscript('');
+        setVoiceStatusText('');
       }
-      setTimeout(() => setVoiceTranscript(''), 2500);
     };
 
     recognitionRef.current = recognition;
     return () => {
       try { recognition.abort(); } catch (_) {}
     };
-  }, [voiceTranscript, onStatusChange, setActiveTab]);
+  }, [onStatusChange, setActiveTab]);
 
   const handleMicClick = (e) => {
     e?.stopPropagation();
@@ -106,11 +127,13 @@ export default function DynamicIsland({
     if (aiStatus === 'listening') {
       try { recognitionRef.current.stop(); } catch (_) {}
     } else {
+      latestTranscriptRef.current = '';
       setVoiceTranscript('');
+      setVoiceStatusText('');
       try {
         recognitionRef.current.start();
       } catch (err) {
-        console.warn('Recognition start error:', err);
+        console.warn('Recognition start exception:', err);
       }
     }
   };
@@ -222,7 +245,11 @@ export default function DynamicIsland({
                   <span>Moco Robodog</span>
                 </div>
                 <div className="pill-subtitle">
-                  {voiceTranscript ? `Hearing: "${voiceTranscript}"` : (
+                  {voiceStatusText ? (
+                    <span style={{ color: '#38bdf8', fontWeight: 600 }}>{voiceStatusText}</span>
+                  ) : voiceTranscript ? (
+                    <span style={{ color: '#38bdf8' }}>{`Hearing: "${voiceTranscript}"`}</span>
+                  ) : (
                     <>
                       {aiStatus === 'thinking' && 'Analyzing query...'}
                       {aiStatus === 'speaking' && 'Streaming voice audio...'}
@@ -303,7 +330,9 @@ export default function DynamicIsland({
                 <span>Moco.AI</span>
                 <div className="island-status-pill">
                   <span className={`pill-status-dot ${aiStatus}`} />
-                  <span>{aiStatus.toUpperCase()}</span>
+                  <span>
+                    {voiceStatusText ? voiceStatusText : voiceTranscript ? `Hearing: "${voiceTranscript}"` : aiStatus.toUpperCase()}
+                  </span>
                 </div>
               </div>
 

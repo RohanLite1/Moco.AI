@@ -26,6 +26,54 @@ export async function processVoiceCommand(command, onStatus = null) {
 
   // --- 1. INSTANT REGEX / KEYWORD ROUTING (Ultra fast < 5ms) ---
 
+  // 0. Instant Greetings & Companion Small Talk (< 2ms)
+  if (/^(hey|hi|hello|yo|howdy|good\s+(morning|afternoon|evening)|sup|what's\s+up|hiya)(?:\s+(there|moco|buddy|friend))?[.!?]?$/i.test(lower)) {
+    const greetings = [
+      "Hey! What are we working on today?",
+      "Hi there! How can I help you?",
+      "Hey! I'm here, what's on your mind?",
+      "Hello! Ready whenever you are."
+    ];
+    const reply = greetings[Math.floor(Math.random() * greetings.length)];
+    onStatus?.('idle');
+    return {
+      success: true,
+      action: 'CHAT',
+      target: null,
+      reply
+    };
+  }
+
+  if (/^(who\s+are\s+you|what\s+is\s+your\s+name|what\s+are\s+you)[.!?]?$/i.test(lower)) {
+    onStatus?.('idle');
+    return {
+      success: true,
+      action: 'CHAT',
+      target: null,
+      reply: "I'm Moco, your desktop companion and productivity AI."
+    };
+  }
+
+  if (/^(how\s+are\s+you|how's\s+it\s+going|how\s+are\s+things|how\s+do\s+you\s+feel)[.!?]?$/i.test(lower)) {
+    onStatus?.('idle');
+    return {
+      success: true,
+      action: 'CHAT',
+      target: null,
+      reply: "Feeling great and ready to build! How are you doing today?"
+    };
+  }
+
+  if (/^(thank\s+you|thanks|thanks\s+moco|thank\s+you\s+so\s+much)[.!?]?$/i.test(lower)) {
+    onStatus?.('idle');
+    return {
+      success: true,
+      action: 'CHAT',
+      target: null,
+      reply: "You're very welcome! Let me know if you need anything else."
+    };
+  }
+
   // A. Navigation Commands (handles articles like "the", "my", "a", "some")
   if (
     /\b(open|switch to|go to|show|view|start|launch|set|run)\s+(?:the\s+|a\s+)?(pomodoro|timer|focus|study timer)\b/i.test(lower) ||
@@ -204,7 +252,11 @@ Spoken Command: "${cleanCmd}"`;
       body: JSON.stringify({
         model: DEFAULT_MODEL,
         prompt: agentPrompt,
-        stream: false
+        stream: false,
+        format: 'json',
+        options: {
+          temperature: 0.2
+        }
       })
     });
 

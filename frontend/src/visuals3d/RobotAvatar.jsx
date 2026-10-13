@@ -242,92 +242,110 @@ export default function RobotAvatar({
       antennaMaterials: []
     };
 
-    // Auto-load Blender / Sketchfab .glb model
+    // Auto-load Blender / Sketchfab .glb model with resilient fallback URLs
     const gltfLoader = new GLTFLoader();
-    gltfLoader.load(
-      '/models/aibo.glb',
-      (gltf) => {
-        const loaded = gltf.scene;
+    const candidateUrls = [
+      './models/aibo.glb',
+      'models/aibo.glb',
+      '/models/aibo.glb'
+    ];
 
-        // Traverse and upgrade materials
-        loaded.traverse((child) => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-            if (child.material) {
-              const mat = child.material;
-              mat.needsUpdate = true;
-              // Reactive glowing eyes
-              if (child.name.includes('Eyes') || mat.name === 'Eyes') {
-                mat.emissive = new THREE.Color(0x38bdf8);
-                mat.emissiveIntensity = 1.6;
-                modelState.eyeMaterials.push(mat);
-              }
-              // Reactive antenna indicator bulb
-              if (child.name.includes('light') || mat.name === 'light') {
-                mat.emissive = new THREE.Color(0x38bdf8);
-                mat.emissiveIntensity = 2.2;
-                modelState.antennaMaterials.push(mat);
-              }
-              // Pearlescent cyber chassis enhancement
-              if (mat.name === 'Head' || mat.name === 'chestMat' || mat.name === 'ForeArmMat') {
-                mat.metalness = 0.28;
-                mat.roughness = 0.22;
-              }
-              if (mat.name === 'Ears' || mat.name === 'Antenna' || mat.name === 'Neck') {
-                mat.metalness = 0.6;
-                mat.roughness = 0.32;
+    let urlIdx = 0;
+    const loadNextCandidate = () => {
+      if (urlIdx >= candidateUrls.length) {
+        console.warn('Could not load aibo.glb from any candidate URL. Procedural fallback active.');
+        return;
+      }
+      const modelUrl = candidateUrls[urlIdx++];
+      gltfLoader.load(
+        modelUrl,
+        (gltf) => {
+          const loaded = gltf.scene;
+
+          // Traverse and upgrade materials
+          loaded.traverse((child) => {
+            if (child.isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+              if (child.material) {
+                const mat = child.material;
+                mat.needsUpdate = true;
+                // Reactive glowing eyes
+                if (child.name.includes('Eyes') || mat.name === 'Eyes') {
+                  mat.emissive = new THREE.Color(0x38bdf8);
+                  mat.emissiveIntensity = 1.6;
+                  modelState.eyeMaterials.push(mat);
+                }
+                // Reactive antenna indicator bulb
+                if (child.name.includes('light') || mat.name === 'light') {
+                  mat.emissive = new THREE.Color(0x38bdf8);
+                  mat.emissiveIntensity = 2.2;
+                  modelState.antennaMaterials.push(mat);
+                }
+                // Pearlescent cyber chassis enhancement
+                if (mat.name === 'Head' || mat.name === 'chestMat' || mat.name === 'ForeArmMat') {
+                  mat.metalness = 0.28;
+                  mat.roughness = 0.22;
+                }
+                if (mat.name === 'Ears' || mat.name === 'Antenna' || mat.name === 'Neck') {
+                  mat.metalness = 0.6;
+                  mat.roughness = 0.32;
+                }
               }
             }
+          });
+
+          // Map robot joints for procedural animation
+          const joints = {
+            head: loaded.getObjectByName('Head'),
+            antenna: loaded.getObjectByName('Antenna'),
+            antennaLight: loaded.getObjectByName('Antenna_light_0'),
+            ears: loaded.getObjectByName('Head_Ears_0'),
+            eyes: loaded.getObjectByName('Head_Eyes_0'),
+            neck: loaded.getObjectByName('Neck'),
+            chest: loaded.getObjectByName('Chest'),
+            midSpine: loaded.getObjectByName('MidSpine'),
+            hips: loaded.getObjectByName('Hips'),
+            leftArm: loaded.getObjectByName('LeftArm'),
+            rightArm: loaded.getObjectByName('RightArm'),
+            leftWheel: loaded.getObjectByName('LeftWheel'),
+            rightWheel: loaded.getObjectByName('RightWheel')
+          };
+          modelState.joints = joints;
+
+          for (const [key, obj] of Object.entries(joints)) {
+            if (obj) {
+              modelState.initialRotations[key] = obj.rotation.clone();
+              modelState.initialPositions[key] = obj.position.clone();
+            }
           }
-        });
 
-        // Map robot joints for procedural animation
-        const joints = {
-          head: loaded.getObjectByName('Head'),
-          antenna: loaded.getObjectByName('Antenna'),
-          antennaLight: loaded.getObjectByName('Antenna_light_0'),
-          ears: loaded.getObjectByName('Head_Ears_0'),
-          eyes: loaded.getObjectByName('Head_Eyes_0'),
-          neck: loaded.getObjectByName('Neck'),
-          chest: loaded.getObjectByName('Chest'),
-          midSpine: loaded.getObjectByName('MidSpine'),
-          hips: loaded.getObjectByName('Hips'),
-          leftArm: loaded.getObjectByName('LeftArm'),
-          rightArm: loaded.getObjectByName('RightArm'),
-          leftWheel: loaded.getObjectByName('LeftWheel'),
-          rightWheel: loaded.getObjectByName('RightWheel')
-        };
-        modelState.joints = joints;
-
-        for (const [key, obj] of Object.entries(joints)) {
-          if (obj) {
-            modelState.initialRotations[key] = obj.rotation.clone();
-            modelState.initialPositions[key] = obj.position.clone();
+          // Frame and scale cleanly inside viewport
+          const box = new THREE.Box3().setFromObject(loaded);
+          const size = box.getSize(new THREE.Vector3());
+          const center = box.getCenter(new THREE.Vector3());
+          const maxDim = Math.max(size.x, size.y, size.z);
+          if (maxDim > 0) {
+            const s = (compact ? 2.5 : 2.9) / maxDim;
+            loaded.scale.setScalar(s);
+            const yAdjust = compact ? -(size.y * s * 0.14) : 0;
+            loaded.position.set(-center.x * s, -center.y * s + yAdjust, -center.z * s);
           }
-        }
 
-        // Frame and scale cleanly inside viewport
-        const box = new THREE.Box3().setFromObject(loaded);
-        const size = box.getSize(new THREE.Vector3());
-        const center = box.getCenter(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
-        if (maxDim > 0) {
-          const s = (compact ? 2.5 : 2.9) / maxDim;
-          loaded.scale.setScalar(s);
-          const yAdjust = compact ? -(size.y * s * 0.14) : 0;
-          loaded.position.set(-center.x * s, -center.y * s + yAdjust, -center.z * s);
+          proceduralGroup.visible = false;
+          rootGroup.add(loaded);
+          modelState.isLoaded = true;
+          console.info(`[RobotAvatar] Successfully loaded 3D Aibo model from ${modelUrl}`);
+        },
+        undefined,
+        (err) => {
+          console.warn(`[RobotAvatar] Failed to load 3D model from ${modelUrl}, trying next fallback...`, err);
+          loadNextCandidate();
         }
+      );
+    };
 
-        proceduralGroup.visible = false;
-        rootGroup.add(loaded);
-        modelState.isLoaded = true;
-      },
-      undefined,
-      () => {
-        // Fallback procedural model stays active
-      }
-    );
+    loadNextCandidate();
 
     // -------------------------------------------------------------------------
     // PROCEDURAL TEXTURES & MATERIALS

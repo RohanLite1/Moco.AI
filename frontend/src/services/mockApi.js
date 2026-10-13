@@ -73,5 +73,42 @@ export const mockApi = {
 
   notify: (title, body) => {
     console.log(`[Mock Notification] ${title}: ${body}`);
+  },
+
+  processVoiceCommand: async (command) => {
+    try {
+      const res = await fetch('http://localhost:3001/api/voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command })
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      // Backend offline, fallback to built-in rules
+    }
+
+    const lower = (command || '').toLowerCase();
+    if (/\b(pomodoro|timer|focus)\b/i.test(lower)) {
+      return { success: true, action: 'NAVIGATE', target: 'pomodoro', reply: 'Switching to Pomodoro Focus timer.' };
+    }
+    if (/\b(todo|tasks|task list|checklist)\b/i.test(lower)) {
+      return { success: true, action: 'NAVIGATE', target: 'todo', reply: 'Opening your task queue.' };
+    }
+    if (/\b(music|waves|lofi|ambient)\b/i.test(lower)) {
+      return { success: true, action: 'NAVIGATE', target: 'music', reply: 'Switching to Ambient Waves player.' };
+    }
+    if (/\b(games|game|chess|tetris|snake)\b/i.test(lower)) {
+      return { success: true, action: 'NAVIGATE', target: 'games', reply: 'Opening Games arcade.' };
+    }
+    if (/\b(chat|assistant|moco)\b/i.test(lower)) {
+      return { success: true, action: 'NAVIGATE', target: 'chat', reply: 'Returning to AI Assistant chat.' };
+    }
+    return { success: true, action: 'CHAT', reply: `Moco heard: "${command}"` };
+  },
+
+  onVoiceNavigate: (callback) => {
+    return () => {};
   }
 };

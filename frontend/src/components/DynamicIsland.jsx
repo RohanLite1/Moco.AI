@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Sparkles,
   ChevronDown,
@@ -32,6 +32,88 @@ export default function DynamicIsland({
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const recognitionRef = useRef(null);
+
+  // Initialize Speech Recognition
+  useEffect(() => {
+    const SpeechRecognition =
+      typeof window !== 'undefined' &&
+      (window.SpeechRecognition || window.webkitSpeechRecognition);
+
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      onStatusChange?.('listening');
+      setVoiceTranscript('Listening...');
+    };
+
+    recognition.onresult = (event) => {
+      let text = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        text += event.results[i][0].transcript;
+      }
+      setVoiceTranscript(text);
+    };
+
+    recognition.onerror = (e) => {
+      console.warn('Voice notice:', e.error);
+      onStatusChange?.('idle');
+      setVoiceTranscript('');
+    };
+
+    recognition.onend = async () => {
+      const finalCmd = voiceTranscript.trim();
+      if (finalCmd && finalCmd !== 'Listening...') {
+        onStatusChange?.('thinking');
+        try {
+          const res = await api.processVoiceCommand(finalCmd);
+          if (res?.action === 'NAVIGATE' && res?.target) {
+            setActiveTab?.(res.target);
+            onStatusChange?.('happy');
+            setTimeout(() => onStatusChange?.('idle'), 2500);
+          } else {
+            onStatusChange?.('speaking');
+            setTimeout(() => onStatusChange?.('idle'), 3000);
+          }
+        } catch (err) {
+          console.error('Voice routing error:', err);
+          onStatusChange?.('idle');
+        }
+      } else {
+        onStatusChange?.('idle');
+      }
+      setTimeout(() => setVoiceTranscript(''), 2500);
+    };
+
+    recognitionRef.current = recognition;
+    return () => {
+      try { recognition.abort(); } catch (_) {}
+    };
+  }, [voiceTranscript, onStatusChange, setActiveTab]);
+
+  const handleMicClick = (e) => {
+    e?.stopPropagation();
+    if (!recognitionRef.current) {
+      onStatusChange?.(aiStatus === 'listening' ? 'idle' : 'listening');
+      return;
+    }
+    if (aiStatus === 'listening') {
+      try { recognitionRef.current.stop(); } catch (_) {}
+    } else {
+      setVoiceTranscript('');
+      try {
+        recognitionRef.current.start();
+      } catch (err) {
+        console.warn('Recognition start error:', err);
+      }
+    }
+  };
 
   // ---------------------------------------------------------------------------
   // SYSTEM COLOR SCHEME DETECTION & THEME STATE
@@ -140,11 +222,15 @@ export default function DynamicIsland({
                   <span>Moco Robodog</span>
                 </div>
                 <div className="pill-subtitle">
-                  {aiStatus === 'thinking' && 'Analyzing query...'}
-                  {aiStatus === 'speaking' && 'Streaming voice audio...'}
-                  {aiStatus === 'listening' && 'Listening attentively...'}
-                  {aiStatus === 'happy' && 'Ready for your command!'}
-                  {aiStatus === 'idle' && 'AIBO_UNIT_01 • Click to expand'}
+                  {voiceTranscript ? `Hearing: "${voiceTranscript}"` : (
+                    <>
+                      {aiStatus === 'thinking' && 'Analyzing query...'}
+                      {aiStatus === 'speaking' && 'Streaming voice audio...'}
+                      {aiStatus === 'listening' && 'Listening attentively...'}
+                      {aiStatus === 'happy' && 'Ready for your command!'}
+                      {aiStatus === 'idle' && 'AIBO_UNIT_01 • Click to expand'}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -184,12 +270,9 @@ export default function DynamicIsland({
               {/* Mic / Listen Toggle */}
               <button
                 type="button"
-                className="pill-btn"
-                title="Voice Listen Toggle"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onStatusChange?.(aiStatus === 'listening' ? 'idle' : 'listening');
-                }}
+                className={`pill-btn ${aiStatus === 'listening' ? 'text-red-400 border-red-500' : ''}`}
+                title={aiStatus === 'listening' ? 'Stop Listening' : 'Voice Command Mic'}
+                onClick={handleMicClick}
               >
                 <Mic size={14} />
               </button>
@@ -315,7 +398,13 @@ export default function DynamicIsland({
                         <button
                           key={exp.id}
                           type="button"
-                          onClick={() => onStatusChange?.(exp.id)}
+                          onClick={() => {
+                            if (exp.id === 'listening') {
+                              handleMicClick();
+                            } else {
+                              onStatusChange?.(exp.id);
+                            }
+                          }}
                           className={`expression-btn ${isActive ? 'active' : ''}`}
                         >
                           <Icon size={12} />

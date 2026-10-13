@@ -16,7 +16,18 @@ export default function App() {
     const cleanup = api.onAIStatus((status) => {
       setAiStatus(status);
     });
-    return cleanup;
+
+    // Listen to voice navigation commands from backend IPC
+    const navCleanup = api.onVoiceNavigate?.((targetTab) => {
+      if (targetTab) {
+        setActiveTab(targetTab);
+      }
+    });
+
+    return () => {
+      cleanup?.();
+      navCleanup?.();
+    };
   }, []);
 
   const renderActiveWidget = () => {

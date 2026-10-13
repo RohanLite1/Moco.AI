@@ -81,7 +81,7 @@ const SOUND_LIBRARY = [
       }
     ]
   },
-  // COLUMN 3: RELAX
+  // COLUMN 3: RELAX (Real User Relax Audio Files)
   {
     category: 'relax',
     categoryName: 'Relax',
@@ -91,25 +91,25 @@ const SOUND_LIBRARY = [
         id: 'rain-shower',
         title: 'Rain Shower',
         desc: 'Warm Filtered Rainfall',
-        type: 'noise-rain',
-        freqs: [380, 800],
-        badge: 'Rain'
+        audioSrc: './audio/rain-shower.mp3',
+        type: 'audio-file',
+        badge: 'Relax MP3'
       },
       {
-        id: 'tibetan-bowl',
+        id: 'zen-bowl',
         title: 'Zen Bowl',
         desc: 'Singing Harmonics',
-        type: 'synth',
-        freqs: [108, 216, 324, 432],
-        badge: 'Zen'
+        audioSrc: './audio/zen-bowl.mp3',
+        type: 'audio-file',
+        badge: 'Relax MP3'
       },
       {
-        id: 'forest-stream',
-        title: 'Forest Stream',
-        desc: 'Gentle Flowing Water',
-        type: 'noise-water',
-        freqs: [600, 1100],
-        badge: 'Nature'
+        id: 'deep-relax',
+        title: 'Deep Relax',
+        desc: 'Gentle Calming Waves',
+        audioSrc: './audio/relax.mp3',
+        type: 'audio-file',
+        badge: 'Relax MP3'
       }
     ]
   },

@@ -32,7 +32,7 @@
 }
 
 /* Dark mode override when inside .dynamic-island-shell without theme-light */
-:not(.theme-light) .music-card {
+.theme-dark .music-card {
   background: rgba(15, 23, 42, 0.88);
   border-color: rgba(255, 255, 255, 0.1);
   color: #f8fafc;
@@ -66,7 +66,7 @@
   flex-shrink: 0;
 }
 
-:not(.theme-light) .music-icon-badge {
+.theme-dark .music-icon-badge {
   background: rgba(6, 182, 212, 0.15);
   border-color: rgba(6, 182, 212, 0.35);
   color: #22d3ee;
@@ -86,7 +86,7 @@
   margin-top: 1px;
 }
 
-:not(.theme-light) .music-header-sub {
+.theme-dark .music-header-sub {
   color: #94a3b8;
 }
 
@@ -104,7 +104,7 @@
   color: #0891b2;
 }
 
-:not(.theme-light) .music-live-badge {
+.theme-dark .music-live-badge {
   background: rgba(6, 182, 212, 0.18);
   border-color: rgba(6, 182, 212, 0.4);
   color: #22d3ee;
@@ -136,7 +136,7 @@
   text-align: center;
 }
 
-:not(.theme-light) .music-player-deck {
+.theme-dark .music-player-deck {
   background: rgba(255, 255, 255, 0.035);
   border-color: rgba(255, 255, 255, 0.08);
 }
@@ -165,7 +165,7 @@
   outline: none;
 }
 
-:not(.theme-light) .music-btn-nav {
+.theme-dark .music-btn-nav {
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.12);
   color: #cbd5e1;
@@ -178,7 +178,7 @@
   transform: translateY(-1px);
 }
 
-:not(.theme-light) .music-btn-nav:hover {
+.theme-dark .music-btn-nav:hover {
   background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
 }
@@ -204,7 +204,7 @@
   font-family: inherit;
 }
 
-:not(.theme-light) .music-btn-play {
+.theme-dark .music-btn-play {
   background: linear-gradient(135deg, #0891b2, #4f46e5);
   box-shadow: 0 4px 14px rgba(8, 145, 178, 0.35);
 }
@@ -215,7 +215,7 @@
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
 }
 
-:not(.theme-light) .music-btn-play:hover {
+.theme-dark .music-btn-play:hover {
   background: linear-gradient(135deg, #06b6d4, #6366f1);
   box-shadow: 0 6px 20px rgba(8, 145, 178, 0.5);
 }
@@ -224,7 +224,7 @@
   background: #0891b2;
 }
 
-:not(.theme-light) .music-btn-play.playing {
+.theme-dark .music-btn-play.playing {
   background: linear-gradient(135deg, #06b6d4, #3b82f6);
 }
 
@@ -243,7 +243,7 @@
   line-height: 1.2;
 }
 
-:not(.theme-light) .music-track-title {
+.theme-dark .music-track-title {
   color: #f8fafc;
 }
 
@@ -253,7 +253,7 @@
   color: #0891b2;
 }
 
-:not(.theme-light) .music-track-sub {
+.theme-dark .music-track-sub {
   color: #22d3ee;
 }
 
@@ -269,7 +269,7 @@
   border-radius: 8px;
 }
 
-:not(.theme-light) .music-equalizer {
+.theme-dark .music-equalizer {
   background: rgba(0, 0, 0, 0.25);
 }
 
@@ -280,7 +280,7 @@
   transition: height 0.18s ease;
 }
 
-:not(.theme-light) .music-equalizer-bar {
+.theme-dark .music-equalizer-bar {
   background: #22d3ee;
 }
 
@@ -299,7 +299,7 @@
   flex-shrink: 0;
 }
 
-:not(.theme-light) .music-volume-icon {
+.theme-dark .music-volume-icon {
   color: #94a3b8;
 }
 
@@ -313,7 +313,7 @@
   accent-color: #0891b2;
 }
 
-:not(.theme-light) .music-volume-slider {
+.theme-dark .music-volume-slider {
   background: rgba(255, 255, 255, 0.2);
   accent-color: #22d3ee;
 }
@@ -333,7 +333,7 @@
   margin-top: 2px;
 }
 
-:not(.theme-light) .music-section-title {
+.theme-dark .music-section-title {
   color: #94a3b8;
 }
 
@@ -361,7 +361,7 @@
   box-sizing: border-box;
 }
 
-:not(.theme-light) .music-column {
+.theme-dark .music-column {
   background: rgba(255, 255, 255, 0.03);
   border-color: rgba(255, 255, 255, 0.07);
 }
@@ -377,7 +377,7 @@
   border-bottom: 1px solid #e8ecf4;
 }
 
-:not(.theme-light) .music-column-header {
+.theme-dark .music-column-header {
   color: #f1f5f9;
   border-bottom-color: rgba(255, 255, 255, 0.08);
 }
@@ -401,7 +401,7 @@
   box-sizing: border-box;
 }
 
-:not(.theme-light) .music-sound-btn {
+.theme-dark .music-sound-btn {
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(255, 255, 255, 0.08);
 }
@@ -413,7 +413,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-:not(.theme-light) .music-sound-btn:hover {
+.theme-dark .music-sound-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(6, 182, 212, 0.35);
 }
@@ -424,7 +424,7 @@
   box-shadow: 0 2px 8px rgba(8, 145, 178, 0.15);
 }
 
-:not(.theme-light) .music-sound-btn.active {
+.theme-dark .music-sound-btn.active {
   background: rgba(6, 182, 212, 0.2);
   border-color: rgba(6, 182, 212, 0.5);
   box-shadow: 0 0 12px rgba(6, 182, 212, 0.25);
@@ -437,7 +437,7 @@
   line-height: 1.2;
 }
 
-:not(.theme-light) .music-sound-btn-title {
+.theme-dark .music-sound-btn-title {
   color: #f1f5f9;
 }
 
@@ -445,7 +445,7 @@
   color: #0891b2;
 }
 
-:not(.theme-light) .music-sound-btn.active .music-sound-btn-title {
+.theme-dark .music-sound-btn.active .music-sound-btn-title {
   color: #22d3ee;
 }
 
@@ -455,7 +455,7 @@
   font-family: 'JetBrains Mono', monospace;
 }
 
-:not(.theme-light) .music-sound-btn-desc {
+.theme-dark .music-sound-btn-desc {
   color: #94a3b8;
 }
 
@@ -479,7 +479,7 @@
   overflow: hidden;
 }
 
-:not(.theme-light) .music-progress-bar {
+.theme-dark .music-progress-bar {
   background: rgba(255, 255, 255, 0.12);
 }
 
@@ -499,6 +499,6 @@
   color: #64748b;
 }
 
-:not(.theme-light) .music-time-meta {
+.theme-dark .music-time-meta {
   color: #94a3b8;
 }

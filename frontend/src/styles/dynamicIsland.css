@@ -1,6 +1,8 @@
 /* Dynamic Island & RoboDog HUD Styling with System Dark/Light Themes */
 
-:root {
+:root,
+.theme-dark,
+[data-theme="dark"] {
   /* Default / Dark Theme tokens */
   --island-bg: rgba(9, 14, 28, 0.86);
   --island-border: rgba(6, 182, 212, 0.28);
@@ -18,7 +20,8 @@
 }
 
 /* Light Theme Overrides (Auto-applied based on system theme or toggle) */
-.theme-light {
+.theme-light,
+[data-theme="light"] {
   --island-bg: rgba(248, 250, 252, 0.9);
   --island-border: rgba(14, 165, 233, 0.28);
   --island-border-hover: rgba(14, 165, 233, 0.6);

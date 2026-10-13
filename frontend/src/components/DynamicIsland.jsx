@@ -215,6 +215,15 @@ export default function DynamicIsland({
         : 'light'
       : themePreference;
 
+  // Synchronize document-level theme classes and dataset
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', activeTheme);
+      document.body.classList.remove('theme-light', 'theme-dark');
+      document.body.classList.add(`theme-${activeTheme}`);
+    }
+  }, [activeTheme]);
+
   // Toggle Theme: Auto -> Dark -> Light -> Auto
   const cycleTheme = (e) => {
     e?.stopPropagation();
@@ -261,10 +270,14 @@ export default function DynamicIsland({
   };
 
   return (
-    <div className={`dynamic-island-viewport ${activeTheme === 'light' ? 'theme-light' : 'theme-dark'}`}>
+    <div
+      className={`dynamic-island-viewport ${activeTheme === 'light' ? 'theme-light' : 'theme-dark'}`}
+      data-theme={activeTheme}
+    >
       {/* Dynamic Island Container */}
       <div
-        className={`dynamic-island-shell ${isExpanded ? 'expanded' : 'pill'}`}
+        className={`dynamic-island-shell ${isExpanded ? 'expanded' : 'pill'} ${activeTheme === 'light' ? 'theme-light' : 'theme-dark'}`}
+        data-theme={activeTheme}
         onClick={!isExpanded ? handlePillClick : undefined}
       >
         {/* =================================================================== */}
@@ -325,7 +338,7 @@ export default function DynamicIsland({
               {/* Battery & Telemetry Badge */}
               <div
                 className="pill-badge"
-                title={`Device Battery: ${batteryPercent}%${isCharging ? ' (Charging ⚡)' : ''}`}
+                title={`Device Battery: ${batteryPercent}%${isCharging ? ' (Charging)' : ''}`}
               >
                 <Battery size={13} color={activeTheme === 'light' ? '#0284c7' : '#38bdf8'} />
                 <span>{batteryPercent}%</span>

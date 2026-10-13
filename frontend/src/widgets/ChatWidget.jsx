@@ -9,7 +9,10 @@ import {
   Copy,
   Check,
   Cpu,
-  CornerDownLeft
+  CornerDownLeft,
+  Zap,
+  Headphones,
+  Gamepad2
 } from 'lucide-react';
 
 export default function ChatWidget({ onStatusChange }) {
@@ -26,10 +29,10 @@ export default function ChatWidget({ onStatusChange }) {
   const messagesEndRef = useRef(null);
 
   const quickPrompts = [
-    { icon: '⚡', label: 'Plan Focus Sprint', prompt: 'Help me break down my work into a 25-minute high-focus sprint.' },
-    { icon: '🎵', label: 'Focus Ambience', prompt: 'What ambient music or binaural beats are best for deep concentration?' },
-    { icon: '🎮', label: 'Take a 5m Break', prompt: 'Give me a quick 2-minute stretch routine before I jump into a game of Tetris.' },
-    { icon: '💡', label: 'Boost Productivity', prompt: 'Suggest 3 actionable strategies to enter flow state right now.' }
+    { icon: Zap, label: 'Plan Focus Sprint', prompt: 'Help me break down my work into a 25-minute high-focus sprint.' },
+    { icon: Headphones, label: 'Focus Ambience', prompt: 'What ambient music or binaural beats are best for deep concentration?' },
+    { icon: Gamepad2, label: 'Take a 5m Break', prompt: 'Give me a quick 2-minute stretch routine before I jump into a game of Tetris.' },
+    { icon: Sparkles, label: 'Boost Productivity', prompt: 'Suggest 3 actionable strategies to enter flow state right now.' }
   ];
 
   useEffect(() => {
@@ -190,17 +193,22 @@ export default function ChatWidget({ onStatusChange }) {
         {/* Quick Suggestion Chips */}
         {messages.length <= 3 && (
           <div className="chat-prompts-container">
-            {quickPrompts.map((qp, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={(e) => handleSend(e, qp.prompt)}
-                className="chat-prompt-pill"
-              >
-                <span className="chat-prompt-icon">{qp.icon}</span>
-                <span>{qp.label}</span>
-              </button>
-            ))}
+            {quickPrompts.map((qp, i) => {
+              const Icon = qp.icon;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={(e) => handleSend(e, qp.prompt)}
+                  className="chat-prompt-pill"
+                >
+                  <span className="chat-prompt-icon">
+                    <Icon size={13} strokeWidth={2.2} />
+                  </span>
+                  <span>{qp.label}</span>
+                </button>
+              );
+            })}
           </div>
         )}
 

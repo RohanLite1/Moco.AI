@@ -788,7 +788,7 @@ function TetrisGame({ onBack }) {
                 className="p-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 font-bold text-xs font-mono transition flex items-center justify-center"
                 title="Hard Drop (Space)"
               >
-                ⚡
+                <Zap size={14} />
               </button>
             </div>
           </div>

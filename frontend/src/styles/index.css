@@ -6,7 +6,9 @@
 @import './games.css';
 @import './chat.css';
 
-:root {
+:root,
+.theme-dark,
+[data-theme="dark"] {
   --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
@@ -21,6 +23,37 @@
   --accent-purple: #a855f7;
   --text-primary: #f8fafc;
   --text-muted: #94a3b8;
+
+  --moco-bg-card: rgba(15, 23, 42, 0.88);
+  --moco-bg-subtle: rgba(255, 255, 255, 0.04);
+  --moco-border: rgba(255, 255, 255, 0.1);
+  --moco-text: #f8fafc;
+  --moco-text-sub: #94a3b8;
+  --moco-accent: #22d3ee;
+  --moco-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), 0 0 20px rgba(6, 182, 212, 0.08);
+}
+
+.theme-light,
+[data-theme="light"] {
+  --bg-hud: rgba(248, 250, 252, 0.92);
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --border-glow: rgba(8, 145, 178, 0.3);
+  --border-subtle: #e8ecf4;
+
+  --accent-cyan: #0891b2;
+  --accent-cyan-glow: rgba(8, 145, 178, 0.25);
+  --accent-purple: #7c3aed;
+  --text-primary: #111827;
+  --text-muted: #64748b;
+
+  --moco-bg-card: #ffffff;
+  --moco-bg-subtle: #f8fafc;
+  --moco-border: #e8ecf4;
+  --moco-text: #111827;
+  --moco-text-sub: #64748b;
+  --moco-accent: #0891b2;
+  --moco-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 4px 12px -2px rgba(0, 0, 0, 0.02);
 }
 
 * {

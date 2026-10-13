@@ -642,6 +642,10 @@ export default function RobotAvatar({
     fillLight.position.set(3, -2, 2);
     scene.add(fillLight);
 
+    const eyeFill = new THREE.DirectionalLight(0xe0f2fe, 1.1);
+    eyeFill.position.set(0, 0.5, 4.5);
+    scene.add(eyeFill);
+
     // -------------------------------------------------------------------------
     // 8. MOUSE LOOK-AT TRACKING
     // -------------------------------------------------------------------------

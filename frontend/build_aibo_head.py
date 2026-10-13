@@ -1,13 +1,15 @@
 """
-Blender 5.2 Automation Script: High-Fidelity Robotic Dog Head Model
-Generates a complete Sony Aibo styled robotic dog head with:
-- Cranium & Skull with glossy ceramic white chassis
-- Champagne contoured Faceplate & Snout
-- Contoured OLED Eye Sockets with glowing emissive Cyan OLED iris displays
-- Rounded Floppy/Paddle Ears with mechanical hinges
-- Button Sensor Nose with front camera lens element
-- Articulated Jaw Seam & Chin
-- Sleek Neck Collar Base Mount
+Blender 5.2 Automation Script: Exact Replica of Reference Robotic Puppy Head
+Matches the uploaded reference image:
+- Smooth, glossy pearlescent white robotic puppy cranium with chubby cheeks
+- Forehead crest with curved glowing Cyan LED light notch
+- Large, adorable OLED eyes with deep sockets, glowing cyan crescent irises & catchlight glints
+- Expressive curved dark robotic eyebrows
+- 4 precision sensor pinholes on the nose bridge
+- Smooth black button nose & sweet curved mouth seam
+- Two-tone floppy curved puppy ears (glossy white outer shell + metallic titanium inner lining)
+- Ambient glowing Cyan LED under-jaw seam lights
+- Sleek neck joint collar
 Exports directly to frontend/public/models/aibo.glb
 """
 
@@ -18,7 +20,6 @@ import os
 
 def reset_scene():
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    # Remove all collections and objects
     for obj in bpy.data.objects:
         bpy.data.objects.remove(obj, do_unlink=True)
     for mesh in bpy.data.meshes:
@@ -26,32 +27,25 @@ def reset_scene():
     for mat in bpy.data.materials:
         bpy.data.materials.remove(mat, do_unlink=True)
 
-def create_pbr_material(name, base_color=(1, 1, 1, 1), roughness=0.2, metallic=0.0, emission_color=(0, 0, 0, 1), emission_strength=0.0):
+def create_pbr_material(name, base_color=(1, 1, 1, 1), roughness=0.15, metallic=0.0, emission_color=(0, 0, 0, 1), emission_strength=0.0):
     mat = bpy.data.materials.new(name=name)
     mat.use_nodes = True
     nodes = mat.node_tree.nodes
     bsdf = nodes.get("Principled BSDF")
     
     if bsdf:
-        # Base Color
         if "Base Color" in bsdf.inputs:
             bsdf.inputs["Base Color"].default_value = base_color
-            
-        # Roughness
         if "Roughness" in bsdf.inputs:
             bsdf.inputs["Roughness"].default_value = roughness
-            
-        # Metallic
         if "Metallic" in bsdf.inputs:
             bsdf.inputs["Metallic"].default_value = metallic
             
-        # Specular IOR Level / Specular
         for spec_key in ["Specular IOR Level", "Specular", "Specular Tint"]:
             if spec_key in bsdf.inputs:
                 bsdf.inputs[spec_key].default_value = 0.5
                 break
 
-        # Emission
         if emission_strength > 0:
             for em_col_key in ["Emission Color", "Emission"]:
                 if em_col_key in bsdf.inputs:
@@ -71,281 +65,422 @@ def add_subsurf(obj, levels=2):
     mod.levels = levels
     mod.render_levels = levels
 
-def build_model():
+def build_reference_replica():
     # -------------------------------------------------------------------------
     # 1. PBR MATERIALS
     # -------------------------------------------------------------------------
-    mat_white = create_pbr_material("Aibo_White_Chassis", base_color=(0.96, 0.97, 0.98, 1.0), roughness=0.15, metallic=0.12)
-    mat_champagne = create_pbr_material("Aibo_Champagne_Face", base_color=(0.86, 0.83, 0.78, 1.0), roughness=0.25, metallic=0.08)
-    mat_dark_trim = create_pbr_material("Aibo_Dark_Trim", base_color=(0.04, 0.06, 0.10, 1.0), roughness=0.22, metallic=0.65)
-    mat_brown_ear = create_pbr_material("Aibo_Brown_Ear", base_color=(0.24, 0.16, 0.12, 1.0), roughness=0.30, metallic=0.18)
-    
-    # Glowing OLED Iris Material
-    mat_oled_glow = create_pbr_material(
-        "Aibo_OLED_Glow",
-        base_color=(0.02, 0.75, 0.95, 1.0),
-        roughness=0.08,
-        metallic=0.1,
-        emission_color=(0.0, 0.85, 1.0, 1.0),
-        emission_strength=3.2
+    # Glossy Pearlescent White Ceramic Shell
+    mat_white = create_pbr_material(
+        "Ref_White_Ceramic",
+        base_color=(0.95, 0.96, 0.98, 1.0),
+        roughness=0.10,
+        metallic=0.05
     )
-    mat_oled_pupil = create_pbr_material("Aibo_OLED_Pupil", base_color=(0.01, 0.02, 0.05, 1.0), roughness=0.05, metallic=0.2)
-    mat_lens = create_pbr_material("Aibo_Camera_Lens", base_color=(0.01, 0.45, 0.75, 1.0), roughness=0.05, metallic=0.8, emission_color=(0.0, 0.5, 0.9, 1.0), emission_strength=1.5)
+
+    # Sleek Metallic Titanium / Graphite (Inner ear, socket trim, eyebrows)
+    mat_titanium = create_pbr_material(
+        "Ref_Dark_Titanium",
+        base_color=(0.14, 0.16, 0.20, 1.0),
+        roughness=0.20,
+        metallic=0.75
+    )
+
+    # Satin Smooth Black Button Nose
+    mat_nose = create_pbr_material(
+        "Ref_Black_Nose",
+        base_color=(0.04, 0.05, 0.07, 1.0),
+        roughness=0.30,
+        metallic=0.20
+    )
+
+    # Deep Glossy Obsidian OLED Screen
+    mat_oled_black = create_pbr_material(
+        "Ref_OLED_Black",
+        base_color=(0.015, 0.02, 0.04, 1.0),
+        roughness=0.04,
+        metallic=0.10
+    )
+
+    # Vibrant Radiant Cyan LED Emission (Eyes, Forehead Notch, Under-Jaw)
+    mat_cyan_led = create_pbr_material(
+        "Ref_Cyan_LED",
+        base_color=(0.0, 0.85, 1.0, 1.0),
+        roughness=0.05,
+        metallic=0.0,
+        emission_color=(0.0, 0.92, 1.0, 1.0),
+        emission_strength=4.8
+    )
+
+    # Pure White Catchlight Sparkles
+    mat_sparkle = create_pbr_material(
+        "Ref_Catchlight",
+        base_color=(1.0, 1.0, 1.0, 1.0),
+        roughness=0.0,
+        emission_color=(1.0, 1.0, 1.0, 1.0),
+        emission_strength=5.0
+    )
 
     created_objects = []
 
     # -------------------------------------------------------------------------
-    # 2. MAIN CRANIUM / SKULL (Glossy White Ceramic Pearlescent)
+    # 2. MAIN SKULL & CHUBBY CHEEKS (Smooth Glossy White)
     # -------------------------------------------------------------------------
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=48, ring_count=32, radius=1.0, location=(0, -0.15, 0.05))
+    # Main Cranium Sphere
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=48, ring_count=32, radius=1.0, location=(0, 0, 0.08))
     skull = bpy.context.active_object
-    skull.name = "Aibo_Skull"
-    skull.scale = (1.12, 1.18, 1.06)
+    skull.name = "Ref_Skull"
+    # Adorable puppy proportions: slightly wider at cheeks, deep front-to-back
+    skull.scale = (1.18, 1.15, 1.08)
     skull.data.materials.append(mat_white)
     apply_smooth(skull)
     add_subsurf(skull, levels=1)
     created_objects.append(skull)
 
-    # -------------------------------------------------------------------------
-    # 3. FRONT FACEPLATE MASK (Champagne Pearlescent)
-    # -------------------------------------------------------------------------
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=48, ring_count=32, radius=0.96, location=(0, 0.18, 0.02))
-    faceplate = bpy.context.active_object
-    faceplate.name = "Aibo_Faceplate"
-    faceplate.scale = (1.08, 1.14, 0.98)
-    faceplate.data.materials.append(mat_champagne)
-    apply_smooth(faceplate)
-    add_subsurf(faceplate, levels=1)
-    created_objects.append(faceplate)
+    # Chubby Lower Cheeks & Face Contour
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=40, ring_count=28, radius=0.88, location=(0, 0.22, -0.12))
+    cheeks = bpy.context.active_object
+    cheeks.name = "Ref_Cheeks"
+    cheeks.scale = (1.22, 1.12, 0.85)
+    cheeks.data.materials.append(mat_white)
+    apply_smooth(cheeks)
+    add_subsurf(cheeks, levels=1)
+    created_objects.append(cheeks)
+
+    # Rounded Soft Puppy Muzzle
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=36, ring_count=24, radius=0.62, location=(0, 0.72, -0.22))
+    muzzle = bpy.context.active_object
+    muzzle.name = "Ref_Muzzle"
+    muzzle.scale = (1.10, 1.18, 0.78)
+    muzzle.data.materials.append(mat_white)
+    apply_smooth(muzzle)
+    add_subsurf(muzzle, levels=1)
+    created_objects.append(muzzle)
 
     # -------------------------------------------------------------------------
-    # 4. SNOUT & MUZZLE (Champagne)
+    # 3. FOREHEAD NOTCH & GLOWING CYAN LED CREST LIGHT
     # -------------------------------------------------------------------------
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=36, ring_count=24, radius=0.58, location=(0, 0.82, -0.18))
-    snout = bpy.context.active_object
-    snout.name = "Aibo_Snout"
-    snout.scale = (1.14, 1.28, 0.82)
-    snout.data.materials.append(mat_champagne)
-    apply_smooth(snout)
-    add_subsurf(snout, levels=1)
-    created_objects.append(snout)
+    # Forehead Ridge / Crest Shell Cap
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=36, ring_count=24, radius=0.68, location=(0, 0.38, 0.76))
+    crest_cap = bpy.context.active_object
+    crest_cap.name = "Ref_Forehead_Crest_Cap"
+    crest_cap.scale = (0.75, 0.95, 0.55)
+    crest_cap.data.materials.append(mat_white)
+    apply_smooth(crest_cap)
+    created_objects.append(crest_cap)
+
+    # Forehead Notch Cutout Trim (Dark titanium recess seam)
+    bpy.ops.mesh.primitive_torus_add(
+        major_radius=0.28,
+        minor_radius=0.035,
+        major_segments=32,
+        minor_segments=16,
+        location=(0, 0.62, 0.78)
+    )
+    notch_trim = bpy.context.active_object
+    notch_trim.name = "Ref_Forehead_Notch_Trim"
+    notch_trim.scale = (0.9, 0.35, 0.6)
+    notch_trim.rotation_euler = (math.radians(35), 0, 0)
+    notch_trim.data.materials.append(mat_titanium)
+    apply_smooth(notch_trim)
+    created_objects.append(notch_trim)
+
+    # Luminous Cyan LED Light Bar in Forehead Notch
+    bpy.ops.mesh.primitive_torus_add(
+        major_radius=0.22,
+        minor_radius=0.026,
+        major_segments=32,
+        minor_segments=16,
+        location=(0, 0.63, 0.79)
+    )
+    notch_led = bpy.context.active_object
+    notch_led.name = "Ref_Forehead_Notch_LED"
+    notch_led.scale = (0.85, 0.30, 0.55)
+    notch_led.rotation_euler = (math.radians(35), 0, 0)
+    notch_led.data.materials.append(mat_cyan_led)
+    apply_smooth(notch_led)
+    created_objects.append(notch_led)
 
     # -------------------------------------------------------------------------
-    # 5. BUTTON SENSOR NOSE & CAMERA LENS APERTURE
+    # 4. LARGE EXPRESSIVE ROBOTIC PUPPY OLED EYES
     # -------------------------------------------------------------------------
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=32, ring_count=20, radius=0.18, location=(0, 1.36, -0.05))
-    nose = bpy.context.active_object
-    nose.name = "Aibo_Nose_Button"
-    nose.scale = (1.20, 0.90, 0.86)
-    nose.data.materials.append(mat_dark_trim)
-    apply_smooth(nose)
-    created_objects.append(nose)
-
-    # Camera Lens Rim on Nose tip
-    bpy.ops.mesh.primitive_torus_add(major_radius=0.048, minor_radius=0.012, major_segments=24, minor_segments=16, location=(0, 1.48, -0.05))
-    lens_rim = bpy.context.active_object
-    lens_rim.name = "Aibo_Camera_Rim"
-    lens_rim.rotation_euler = (math.radians(90), 0, 0)
-    lens_rim.data.materials.append(mat_dark_trim)
-    apply_smooth(lens_rim)
-    created_objects.append(lens_rim)
-
-    # Glowing Camera Lens Glass
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=16, ring_count=12, radius=0.038, location=(0, 1.485, -0.05))
-    lens_glass = bpy.context.active_object
-    lens_glass.name = "Aibo_Camera_Glass"
-    lens_glass.scale = (1.0, 0.35, 1.0)
-    lens_glass.rotation_euler = (math.radians(90), 0, 0)
-    lens_glass.data.materials.append(mat_lens)
-    apply_smooth(lens_glass)
-    created_objects.append(lens_glass)
-
-    # -------------------------------------------------------------------------
-    # 6. MOUTH SEAM & LOWER CHIN
-    # -------------------------------------------------------------------------
-    # Mouth groove
-    bpy.ops.mesh.primitive_cylinder_add(radius=0.009, depth=0.44, vertices=16, location=(0, 1.12, -0.27))
-    mouth = bpy.context.active_object
-    mouth.name = "Aibo_Mouth_Seam"
-    mouth.rotation_euler = (0, math.radians(90), 0)
-    mouth.data.materials.append(mat_dark_trim)
-    apply_smooth(mouth)
-    created_objects.append(mouth)
-
-    # Sculpted Puppy Chin
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=32, ring_count=20, radius=0.42, location=(0, 0.78, -0.34))
-    chin = bpy.context.active_object
-    chin.name = "Aibo_Chin"
-    chin.scale = (1.10, 1.20, 0.60)
-    chin.data.materials.append(mat_champagne)
-    apply_smooth(chin)
-    created_objects.append(chin)
-
-    # -------------------------------------------------------------------------
-    # 7. CONTOURED OLED EYE SOCKETS & GLOWING OLED EYE DISPLAYS
-    # -------------------------------------------------------------------------
-    eye_offset_x = 0.46
-    eye_offset_y = 0.90
-    eye_offset_z = 0.22
-    eye_radius = 0.25
+    # Look at the reference: the eyes are large, soulfully round, with deep sockets
+    eye_x = 0.50
+    eye_y = 0.76
+    eye_z = 0.12
+    eye_r = 0.38
 
     for side, sign in [("Left", -1), ("Right", 1)]:
-        # Dark Socket Bezel / Ring
+        # Dark Titanium Socket Bezel (Outer ring framing the OLED screen)
         bpy.ops.mesh.primitive_torus_add(
-            major_radius=eye_radius + 0.025,
-            minor_radius=0.035,
-            major_segments=32,
+            major_radius=eye_r + 0.022,
+            minor_radius=0.042,
+            major_segments=36,
             minor_segments=16,
-            location=(sign * eye_offset_x, eye_offset_y + 0.02, eye_offset_z)
+            location=(sign * eye_x, eye_y + 0.02, eye_z)
         )
-        socket_rim = bpy.context.active_object
-        socket_rim.name = f"Aibo_Eye_Socket_Rim_{side}"
-        socket_rim.rotation_euler = (math.radians(82), sign * math.radians(14), 0)
-        socket_rim.data.materials.append(mat_dark_trim)
-        apply_smooth(socket_rim)
-        created_objects.append(socket_rim)
+        bezel = bpy.context.active_object
+        bezel.name = f"Ref_Eye_Socket_Bezel_{side}"
+        bezel.rotation_euler = (math.radians(82), sign * math.radians(16), 0)
+        bezel.data.materials.append(mat_titanium)
+        apply_smooth(bezel)
+        created_objects.append(bezel)
 
-        # Deep Obsidian OLED Display Screen Plate
+        # Deep Glossy Obsidian OLED Screen Dome
         bpy.ops.mesh.primitive_uv_sphere_add(
-            segments=32,
-            ring_count=24,
-            radius=eye_radius,
-            location=(sign * eye_offset_x, eye_offset_y, eye_offset_z)
+            segments=36,
+            ring_count=28,
+            radius=eye_r,
+            location=(sign * eye_x, eye_y, eye_z)
         )
-        eye_screen = bpy.context.active_object
-        eye_screen.name = f"Aibo_OLED_Screen_{side}"
-        eye_screen.scale = (1.0, 0.45, 1.0)
-        eye_screen.rotation_euler = (math.radians(82), sign * math.radians(14), 0)
-        eye_screen.data.materials.append(mat_oled_pupil)
-        apply_smooth(eye_screen)
-        created_objects.append(eye_screen)
+        screen = bpy.context.active_object
+        screen.name = f"Ref_OLED_Screen_{side}"
+        screen.scale = (1.0, 0.42, 1.0)
+        screen.rotation_euler = (math.radians(82), sign * math.radians(16), 0)
+        screen.data.materials.append(mat_oled_black)
+        apply_smooth(screen)
+        created_objects.append(screen)
 
-        # Glowing OLED Iris Ring (Radiant Cyan Emission)
+        # Radiant Glowing Cyan Iris Arc / Lower Crescent
+        # This gives the signature glowing blue ring seen in the reference image
         bpy.ops.mesh.primitive_torus_add(
-            major_radius=eye_radius * 0.65,
-            minor_radius=0.022,
-            major_segments=32,
+            major_radius=eye_r * 0.72,
+            minor_radius=0.038,
+            major_segments=36,
             minor_segments=16,
-            location=(sign * eye_offset_x, eye_offset_y + 0.04, eye_offset_z)
+            location=(sign * eye_x, eye_y + 0.042, eye_z - 0.04)
         )
-        iris_ring = bpy.context.active_object
-        iris_ring.name = f"Aibo_OLED_Iris_{side}"
-        iris_ring.rotation_euler = (math.radians(82), sign * math.radians(14), 0)
-        iris_ring.data.materials.append(mat_oled_glow)
-        apply_smooth(iris_ring)
-        created_objects.append(iris_ring)
+        iris_arc = bpy.context.active_object
+        iris_arc.name = f"Ref_Cyan_Iris_Arc_{side}"
+        iris_arc.rotation_euler = (math.radians(82), sign * math.radians(16), 0)
+        iris_arc.scale = (1.0, 1.0, 0.75)
+        iris_arc.data.materials.append(mat_cyan_led)
+        apply_smooth(iris_arc)
+        created_objects.append(iris_arc)
 
-        # Specular Catchlight Sparkle (Gives live organic soul to eyes)
+        # Inner pupil ring aperture
+        bpy.ops.mesh.primitive_uv_sphere_add(
+            segments=24,
+            ring_count=16,
+            radius=eye_r * 0.48,
+            location=(sign * eye_x, eye_y + 0.05, eye_z + 0.02)
+        )
+        pupil = bpy.context.active_object
+        pupil.name = f"Ref_Pupil_Core_{side}"
+        pupil.scale = (1.0, 0.35, 1.0)
+        pupil.data.materials.append(mat_oled_black)
+        apply_smooth(pupil)
+        created_objects.append(pupil)
+
+        # Major Specular Catchlight Sparkle (Top-right of eye dome)
         bpy.ops.mesh.primitive_uv_sphere_add(
             segments=16,
             ring_count=12,
-            radius=0.038,
-            location=(sign * eye_offset_x - sign * 0.05, eye_offset_y + 0.065, eye_offset_z + 0.05)
+            radius=0.052,
+            location=(sign * eye_x - sign * 0.07, eye_y + 0.085, eye_z + 0.12)
         )
-        sparkle = bpy.context.active_object
-        sparkle.name = f"Aibo_Eye_Catchlight_{side}"
-        sparkle.data.materials.append(create_pbr_material(f"Sparkle_{side}", base_color=(1, 1, 1, 1), emission_color=(1, 1, 1, 1), emission_strength=4.0))
-        apply_smooth(sparkle)
-        created_objects.append(sparkle)
+        sparkle1 = bpy.context.active_object
+        sparkle1.name = f"Ref_Catchlight_Main_{side}"
+        sparkle1.data.materials.append(mat_sparkle)
+        apply_smooth(sparkle1)
+        created_objects.append(sparkle1)
+
+        # Secondary Micro-Sparkle (Lower-left glint)
+        bpy.ops.mesh.primitive_uv_sphere_add(
+            segments=12,
+            ring_count=10,
+            radius=0.024,
+            location=(sign * eye_x + sign * 0.08, eye_y + 0.085, eye_z - 0.08)
+        )
+        sparkle2 = bpy.context.active_object
+        sparkle2.name = f"Ref_Catchlight_Sub_{side}"
+        sparkle2.data.materials.append(mat_sparkle)
+        apply_smooth(sparkle2)
+        created_objects.append(sparkle2)
+
+        # Cute Curved Dark Eyebrow Mark above Eye
+        bpy.ops.mesh.primitive_torus_add(
+            major_radius=0.18,
+            minor_radius=0.026,
+            major_segments=24,
+            minor_segments=12,
+            location=(sign * (eye_x - 0.06), eye_y + 0.08, eye_z + 0.46)
+        )
+        eyebrow = bpy.context.active_object
+        eyebrow.name = f"Ref_Eyebrow_{side}"
+        eyebrow.scale = (1.1, 0.4, 0.6)
+        eyebrow.rotation_euler = (math.radians(70), sign * math.radians(-18), sign * math.radians(12))
+        eyebrow.data.materials.append(mat_titanium)
+        apply_smooth(eyebrow)
+        created_objects.append(eyebrow)
 
     # -------------------------------------------------------------------------
-    # 8. ROUNDED FLOPPY / PADDLE EARS & MECHANICAL HINGES
+    # 5. NOSE BRIDGE SENSOR PINHOLES (4 Tiny Precision Sensor Apertures)
+    # -------------------------------------------------------------------------
+    sensor_coords = [
+        (-0.06, 0.94, 0.16),
+        (-0.06, 0.96, 0.10),
+        (0.06, 0.94, 0.16),
+        (0.06, 0.96, 0.10)
+    ]
+    for idx, (sx, sy, sz) in enumerate(sensor_coords):
+        bpy.ops.mesh.primitive_cylinder_add(
+            radius=0.012,
+            depth=0.05,
+            vertices=12,
+            location=(sx, sy, sz)
+        )
+        sensor = bpy.context.active_object
+        sensor.name = f"Ref_Bridge_Sensor_{idx+1}"
+        sensor.rotation_euler = (math.radians(90), 0, 0)
+        sensor.data.materials.append(mat_titanium)
+        apply_smooth(sensor)
+        created_objects.append(sensor)
+
+    # -------------------------------------------------------------------------
+    # 6. BUTTON SENSOR NOSE & SWEET MOUTH SEAM
+    # -------------------------------------------------------------------------
+    # Smooth Satin Black Pebble/Button Nose
+    bpy.ops.mesh.primitive_uv_sphere_add(
+        segments=32,
+        ring_count=20,
+        radius=0.22,
+        location=(0, 1.15, -0.16)
+    )
+    nose = bpy.context.active_object
+    nose.name = "Ref_Button_Nose"
+    # Soft rounded triangular/pebble puppy nose shape
+    nose.scale = (1.18, 0.68, 0.82)
+    nose.data.materials.append(mat_nose)
+    apply_smooth(nose)
+    created_objects.append(nose)
+
+    # Gentle Curved Downward Mouth Seam
+    bpy.ops.mesh.primitive_torus_add(
+        major_radius=0.22,
+        minor_radius=0.012,
+        major_segments=24,
+        minor_segments=12,
+        location=(0, 0.94, -0.36)
+    )
+    mouth = bpy.context.active_object
+    mouth.name = "Ref_Mouth_Seam"
+    mouth.scale = (0.85, 0.45, 0.7)
+    # Subtle downward arc matching the sweet puppy expression in image
+    mouth.rotation_euler = (math.radians(-75), 0, 0)
+    mouth.data.materials.append(mat_titanium)
+    apply_smooth(mouth)
+    created_objects.append(mouth)
+
+    # -------------------------------------------------------------------------
+    # 7. TWO-TONE FLOPPY CURVED PUPPY EARS (White Outer + Titanium Inner Rim)
     # -------------------------------------------------------------------------
     for side, sign in [("Left", -1), ("Right", 1)]:
-        hinge_loc = (sign * 0.95, -0.05, 0.70)
-        
-        # Cylindrical Ear Hinge Joint
-        bpy.ops.mesh.primitive_cylinder_add(
-            radius=0.14,
-            depth=0.18,
-            vertices=24,
-            location=hinge_loc
+        # Outer Pearlescent White Curved Ear Shell
+        bpy.ops.mesh.primitive_uv_sphere_add(
+            segments=36,
+            ring_count=24,
+            radius=0.62,
+            location=(sign * 1.08, 0.02, 0.04)
         )
-        hinge = bpy.context.active_object
-        hinge.name = f"Aibo_Ear_Hinge_{side}"
-        hinge.rotation_euler = (0, math.radians(90), 0)
-        hinge.data.materials.append(mat_dark_trim)
-        apply_smooth(hinge)
-        created_objects.append(hinge)
+        outer_ear = bpy.context.active_object
+        outer_ear.name = f"Ref_Outer_Ear_Shell_{side}"
+        # Tear-drop floppy ear shape draping down the side of cheek, flaring at tip
+        outer_ear.scale = (0.34, 0.68, 1.28)
+        outer_ear.rotation_euler = (
+            math.radians(-8),
+            sign * math.radians(24),
+            sign * math.radians(14)
+        )
+        outer_ear.data.materials.append(mat_white)
+        apply_smooth(outer_ear)
+        add_subsurf(outer_ear, levels=1)
+        created_objects.append(outer_ear)
 
-        # Sculpted Rounded Paddle Ear
-        # We start with a scaled & curved cylinder/sphere deformed into a teardrop paddle
+        # Inner Metallic Titanium Ear Inset / Rim
         bpy.ops.mesh.primitive_uv_sphere_add(
             segments=32,
-            ring_count=24,
+            ring_count=20,
             radius=0.55,
-            location=(sign * 1.15, -0.08, 0.15)
+            location=(sign * 1.04, 0.08, 0.02)
         )
-        ear = bpy.context.active_object
-        ear.name = f"Aibo_Ear_Paddle_{side}"
-        # Paddle shape: flattened thickness, stretched length, tapered width
-        ear.scale = (0.24, 0.65, 1.25)
-        # Angled and rotated naturally like soft puppy ears
-        ear.rotation_euler = (
-            math.radians(-10),
-            sign * math.radians(28),
-            sign * math.radians(16)
+        inner_ear = bpy.context.active_object
+        inner_ear.name = f"Ref_Inner_Ear_Trim_{side}"
+        inner_ear.scale = (0.28, 0.62, 1.18)
+        inner_ear.rotation_euler = (
+            math.radians(-8),
+            sign * math.radians(24),
+            sign * math.radians(14)
         )
-        ear.data.materials.append(mat_brown_ear)
-        apply_smooth(ear)
-        add_subsurf(ear, levels=1)
-        created_objects.append(ear)
+        inner_ear.data.materials.append(mat_titanium)
+        apply_smooth(inner_ear)
+        created_objects.append(inner_ear)
 
     # -------------------------------------------------------------------------
-    # 9. CYBER COLLAR & NECK MOUNT BASE
+    # 8. UNDER-JAW GLOWING CYAN LED LIGHTS (Ambient Underglow)
     # -------------------------------------------------------------------------
+    for side, sign in [("Left", -1), ("Right", 1)]:
+        bpy.ops.mesh.primitive_torus_add(
+            major_radius=0.38,
+            minor_radius=0.022,
+            major_segments=24,
+            minor_segments=12,
+            location=(sign * 0.42, 0.28, -0.65)
+        )
+        jaw_glow = bpy.context.active_object
+        jaw_glow.name = f"Ref_Jaw_Underglow_{side}"
+        jaw_glow.scale = (0.9, 0.35, 0.6)
+        jaw_glow.rotation_euler = (math.radians(12), sign * math.radians(35), 0)
+        jaw_glow.data.materials.append(mat_cyan_led)
+        apply_smooth(jaw_glow)
+        created_objects.append(jaw_glow)
+
+    # -------------------------------------------------------------------------
+    # 9. SLEEK ROBOTIC NECK JOINT & COLLAR
+    # -------------------------------------------------------------------------
+    bpy.ops.mesh.primitive_cylinder_add(
+        radius=0.52,
+        depth=0.35,
+        vertices=32,
+        location=(0, -0.05, -0.85)
+    )
+    neck = bpy.context.active_object
+    neck.name = "Ref_Neck_Joint"
+    neck.data.materials.append(mat_white)
+    apply_smooth(neck)
+    created_objects.append(neck)
+
     bpy.ops.mesh.primitive_torus_add(
-        major_radius=0.72,
-        minor_radius=0.08,
-        major_segments=36,
+        major_radius=0.54,
+        minor_radius=0.045,
+        major_segments=32,
         minor_segments=16,
-        location=(0, -0.22, -0.92)
+        location=(0, -0.05, -0.98)
     )
-    collar = bpy.context.active_object
-    collar.name = "Aibo_Collar_Base"
-    collar.scale = (1.1, 1.15, 0.9)
-    collar.data.materials.append(mat_dark_trim)
-    apply_smooth(collar)
-    created_objects.append(collar)
-
-    # Glowing Collar Beacon Ring
-    bpy.ops.mesh.primitive_torus_add(
-        major_radius=0.74,
-        minor_radius=0.02,
-        major_segments=36,
-        minor_segments=12,
-        location=(0, -0.22, -0.92)
-    )
-    collar_glow = bpy.context.active_object
-    collar_glow.name = "Aibo_Collar_Glow_Ring"
-    collar_glow.scale = (1.1, 1.15, 0.9)
-    collar_glow.data.materials.append(mat_oled_glow)
-    apply_smooth(collar_glow)
-    created_objects.append(collar_glow)
+    collar_ring = bpy.context.active_object
+    collar_ring.name = "Ref_Collar_Ring"
+    collar_ring.data.materials.append(mat_titanium)
+    apply_smooth(collar_ring)
+    created_objects.append(collar_ring)
 
     # -------------------------------------------------------------------------
-    # 10. ROOT PARENT & SCALE NORMALIZATION
+    # 10. ROOT PARENTING & ORIENTATION
     # -------------------------------------------------------------------------
     bpy.ops.object.empty_add(type='PLAIN_AXES', location=(0, 0, 0))
     root = bpy.context.active_object
-    root.name = "Aibo_Root"
+    root.name = "Ref_Aibo_Root"
 
     for obj in created_objects:
         obj.parent = root
 
-    # Orient so face points directly forward (+Z) in glTF/Three.js camera view
+    # Orient root so face looks directly forward towards camera (+Z in Three.js)
     root.rotation_euler = (0, 0, math.radians(180))
 
     return root
 
 def export_glb(output_path):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    
-    # Select all objects to export
     bpy.ops.object.select_all(action='SELECT')
-    
-    # Export glTF binary (.glb)
-    print(f"Exporting GLB to: {output_path}")
+    print(f"Exporting Reference Replica GLB to: {output_path}")
     bpy.ops.export_scene.gltf(
         filepath=output_path,
         export_format='GLB',
@@ -353,11 +488,10 @@ def export_glb(output_path):
         export_apply=True,
         export_yup=True
     )
-    print("Export Complete!")
+    print("Export Reference Replica Complete!")
 
 if __name__ == "__main__":
     reset_scene()
-    root_obj = build_model()
-    
+    build_reference_replica()
     output_glb_path = os.path.abspath(r"c:\Users\Hp\Desktop\moco.ai\frontend\public\models\aibo.glb")
     export_glb(output_glb_path)

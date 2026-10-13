@@ -95,8 +95,17 @@ async function runAutomatedTests() {
   const v2 = await processVoiceCommand('calculate 25 * 4');
   assert('Voice Agent: Calculated math 25 * 4 == 100', v2.action === 'CALCULATE' && v2.result === 100);
 
-  const v3 = await processVoiceCommand('open tasks');
-  assert('Voice Agent: Navigated to todo queue', v3.action === 'NAVIGATE' && v3.target === 'todo');
+  const v3 = await processVoiceCommand('open my tasks');
+  assert('Voice Agent: Navigated to todo queue with "open my tasks"', v3.action === 'NAVIGATE' && v3.target === 'todo');
+
+  const v4 = await processVoiceCommand('what is 45 plus 55');
+  assert('Voice Agent: Spoken math "45 plus 55" == 100', v4.action === 'CALCULATE' && v4.result === 100);
+
+  const v5 = await processVoiceCommand('play some music');
+  assert('Voice Agent: Navigated to music player', v5.action === 'NAVIGATE' && v5.target === 'music');
+
+  const v6 = await processVoiceCommand('play chess');
+  assert('Voice Agent: Navigated to games arcade', v6.action === 'NAVIGATE' && v6.target === 'games');
 
   console.log(`\nResults: ${passed}/${total} tests passed.\n`);
 }

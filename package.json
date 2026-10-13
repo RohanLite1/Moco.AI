@@ -13,6 +13,8 @@
     "build:exe": "npm run build:frontend && electron-builder --win portable",
     "test:backend": "node backend/tests/test-runner.js",
     "test:backend:auto": "node backend/tests/test-runner.js --auto",
+    "test:browser": "node backend/dev-server.js",
+    "dev:server": "node backend/dev-server.js",
     "start": "electron backend/main.js"
   },
   "dependencies": {

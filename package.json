@@ -8,9 +8,9 @@
   "scripts": {
     "dev": "concurrently -k \"npm run dev:frontend\" \"npm run dev:electron\"",
     "dev:frontend": "vite --config frontend/vite.config.js frontend",
-    "dev:electron": "cross-env WAIT_FOR_VITE=1 node backend/main.js",
+    "dev:electron": "electron backend/main.js",
     "build:frontend": "vite build --config frontend/vite.config.js frontend",
-    "start": "node backend/main.js"
+    "start": "electron backend/main.js"
   },
   "dependencies": {
     "@google/genai": "^2.29.0",

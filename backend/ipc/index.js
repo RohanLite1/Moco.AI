@@ -1,4 +1,5 @@
-import { ipcMain, Notification } from 'electron';
+import electron from 'electron';
+const { ipcMain, Notification } = electron;
 import { generateStreamingResponse, checkOllamaHealth } from '../services/ollamaService.js';
 import { getItem, setItem } from '../services/storageService.js';
 

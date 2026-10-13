@@ -1,4 +1,5 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import electron from 'electron';
+const { contextBridge, ipcRenderer } = electron;
 
 // Expose safe, isolated API to the frontend renderer process
 contextBridge.exposeInMainWorld('mocoApi', {

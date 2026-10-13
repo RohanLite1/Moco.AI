@@ -1,4 +1,5 @@
-import { app, BrowserWindow, globalShortcut, screen } from 'electron';
+import electron from 'electron';
+const { app, BrowserWindow, globalShortcut, screen } = electron;
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { setupIpcHandlers } from './ipc/index.js';

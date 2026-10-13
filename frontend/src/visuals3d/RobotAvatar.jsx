@@ -107,36 +107,72 @@ function createAiboEyeCanvas(status = 'idle', lookX = 0, lookY = 0) {
   return canvas;
 }
 
-// 2. Procedural Pearlescent Metallic Flake Texture
+// 2. Procedural Pearlescent Chassis Texture with Dalmatian Cyber-Spots
 function createChassisTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 512;
   const ctx = canvas.getContext('2d');
 
+  // Base pearlescent white
   ctx.fillStyle = '#f8fafc';
   ctx.fillRect(0, 0, 512, 512);
 
   // Micro-speckles
-  for (let i = 0; i < 4000; i++) {
+  for (let i = 0; i < 3500; i++) {
     const x = Math.random() * 512;
     const y = Math.random() * 512;
-    const alpha = Math.random() * 0.06;
+    const alpha = Math.random() * 0.05;
     ctx.fillStyle = `rgba(203, 213, 225, ${alpha})`;
     ctx.fillRect(x, y, 1.5, 1.5);
   }
 
+  // --- DISTINCTIVE DALMATIAN / PUPPY SPOTS ON SKIN ---
+  const spots = [
+    { x: 155, y: 175, rx: 72, ry: 58, rot: 0.25 }, // Left eye / temple patch
+    { x: 335, y: 110, rx: 55, ry: 48, rot: -0.2 },  // Top crown spot
+    { x: 235, y: 85,  rx: 40, ry: 32, rot: 0.1 },   // Forehead central spot
+    { x: 390, y: 310, rx: 62, ry: 52, rot: 0.35 }, // Right rear skull spot
+    { x: 125, y: 350, rx: 48, ry: 42, rot: -0.15 },// Left rear skull spot
+    { x: 260, y: 415, rx: 42, ry: 36, rot: 0.1 },   // Lower neck spot
+    { x: 420, y: 175, rx: 46, ry: 38, rot: -0.28 }, // Right temple spot
+    { x: 185, y: 275, rx: 34, ry: 28, rot: 0.18 }   // Cheek flank spot
+  ];
+
+  spots.forEach((s) => {
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    ctx.rotate(s.rot);
+
+    // Organic spot fill (Dark chocolate / charcoal)
+    ctx.fillStyle = '#3a2b23';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, s.rx, s.ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Subtle cybernetic edge trim / seam around each spot
+    ctx.strokeStyle = 'rgba(6, 182, 212, 0.45)';
+    ctx.lineWidth = 1.8;
+    ctx.setLineDash([6, 3]);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, s.rx + 3, s.ry + 3, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.restore();
+  });
+
   // Subtle cyber panel seams
-  ctx.strokeStyle = 'rgba(148, 163, 184, 0.22)';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([]);
   ctx.beginPath();
-  ctx.arc(256, 256, 180, 0, Math.PI);
+  ctx.arc(256, 256, 185, 0, Math.PI);
   ctx.stroke();
 
   return new THREE.CanvasTexture(canvas);
 }
 
-// 3. Procedural Champagne Ceramic Faceplate Texture
+// 3. Procedural Champagne Ceramic Faceplate Texture with Cheek Freckles
 function createFaceplateTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
@@ -147,13 +183,42 @@ function createFaceplateTexture() {
   ctx.fillRect(0, 0, 512, 512);
 
   // Soft ceramic noise
-  for (let i = 0; i < 3000; i++) {
+  for (let i = 0; i < 2500; i++) {
     const x = Math.random() * 512;
     const y = Math.random() * 512;
-    const alpha = Math.random() * 0.05;
+    const alpha = Math.random() * 0.04;
     ctx.fillStyle = `rgba(180, 165, 150, ${alpha})`;
     ctx.fillRect(x, y, 2, 2);
   }
+
+  // Dalmatian Eye Patch Spot over right brow on faceplate
+  ctx.save();
+  ctx.translate(340, 205);
+  ctx.rotate(0.28);
+  ctx.fillStyle = '#3a2b23';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 48, 38, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
+  ctx.lineWidth = 1.6;
+  ctx.setLineDash([5, 3]);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 51, 41, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // Cute Whisker Freckle Spots on Cheek & Snout Pads
+  const freckles = [
+    { x: 165, y: 310, r: 4.5 }, { x: 185, y: 325, r: 4 }, { x: 155, y: 335, r: 4.5 }, { x: 175, y: 345, r: 3.5 },
+    { x: 347, y: 310, r: 4.5 }, { x: 327, y: 325, r: 4 }, { x: 357, y: 335, r: 4.5 }, { x: 337, y: 345, r: 3.5 }
+  ];
+
+  ctx.fillStyle = '#4a3b32';
+  freckles.forEach((f) => {
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
 
   // Subtle contour highlight
   const grad = ctx.createLinearGradient(0, 0, 0, 512);
@@ -319,12 +384,78 @@ export default function RobotAvatar({
     headGroup.add(noseMesh);
 
     // -------------------------------------------------------------------------
-    // 3. ARTICULATED 3D MOUTH & LOWER JAW (Speech Reactive & Panting)
+    // 3. MOUSTACHE, DEFINED LIPS & ARTICULATED TONGUE
     // -------------------------------------------------------------------------
-    // Dark Lip Seam on Upper Muzzle
-    const upperLipGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.46, 16);
-    upperLipGeo.rotateZ(Math.PI / 2);
-    upperLipGeo.translate(0, -0.32, 1.05);
+    // --- CYBER MOUSTACHE & WHISKER PADS ---
+    const moustacheShape = new THREE.Shape();
+    moustacheShape.moveTo(0, 0);
+    moustacheShape.bezierCurveTo(0.12, 0.08, 0.28, 0.02, 0.36, -0.08);
+    moustacheShape.bezierCurveTo(0.25, -0.16, 0.10, -0.12, 0, -0.06);
+    moustacheShape.closePath();
+
+    const moustacheGeo = new THREE.ExtrudeGeometry(moustacheShape, {
+      depth: 0.06,
+      bevelEnabled: true,
+      bevelSegments: 3,
+      bevelSize: 0.02,
+      bevelThickness: 0.02
+    });
+
+    const leftMoustache = new THREE.Mesh(moustacheGeo, darkTrimMat);
+    leftMoustache.position.set(-0.06, -0.14, 1.34);
+    leftMoustache.rotation.set(-0.15, 0.2, 0.1);
+    headGroup.add(leftMoustache);
+
+    const rightMoustache = new THREE.Mesh(moustacheGeo, darkTrimMat);
+    rightMoustache.scale.x = -1;
+    rightMoustache.position.set(0.06, -0.14, 1.34);
+    rightMoustache.rotation.set(-0.15, -0.2, -0.1);
+    headGroup.add(rightMoustache);
+
+    // Whisker Pores / Micro Nodes & Extended Whisker Hairs on Snout
+    const whiskerNodeGeo = new THREE.SphereGeometry(0.022, 8, 8);
+    const whiskerHairGeo = new THREE.CylinderGeometry(0.005, 0.002, 0.38, 8);
+    whiskerHairGeo.translate(0, 0.19, 0); // Center pivot at hair base
+
+    const whiskerPositions = [
+      { pos: { x: -0.28, y: -0.12, z: 1.28 }, rot: [0.12, 0.62, -0.32] },
+      { pos: { x: -0.36, y: -0.16, z: 1.22 }, rot: [0.0, 0.82, -0.05] },
+      { pos: { x: -0.26, y: -0.22, z: 1.24 }, rot: [-0.14, 0.62, 0.22] }
+    ];
+
+    whiskerPositions.forEach(({ pos, rot }) => {
+      // Left Pore Node & Whisker
+      const nodeL = new THREE.Mesh(whiskerNodeGeo, darkTrimMat);
+      nodeL.position.set(pos.x, pos.y, pos.z);
+      headGroup.add(nodeL);
+
+      const whiskerL = new THREE.Mesh(whiskerHairGeo, darkTrimMat);
+      whiskerL.position.set(pos.x, pos.y, pos.z);
+      whiskerL.rotation.set(rot[0], rot[1], rot[2]);
+      headGroup.add(whiskerL);
+
+      // Right Pore Node & Whisker (Mirrored)
+      const nodeR = new THREE.Mesh(whiskerNodeGeo, darkTrimMat);
+      nodeR.position.set(-pos.x, pos.y, pos.z);
+      headGroup.add(nodeR);
+
+      const whiskerR = new THREE.Mesh(whiskerHairGeo, darkTrimMat);
+      whiskerR.position.set(-pos.x, pos.y, pos.z);
+      whiskerR.rotation.set(rot[0], -rot[1], -rot[2]);
+      headGroup.add(whiskerR);
+    });
+
+    // --- DEFINED UPPER & LOWER LIPS ---
+    // Philtrum vertical cleft from nose to upper lip
+    const philtrumGeo = new THREE.CylinderGeometry(0.016, 0.016, 0.20, 12);
+    philtrumGeo.translate(0, -0.18, 1.33);
+    const philtrumMesh = new THREE.Mesh(philtrumGeo, darkTrimMat);
+    headGroup.add(philtrumMesh);
+
+    // Sculpted Upper Lip Rim (Curved mustache-mouth arch)
+    const upperLipGeo = new THREE.TorusGeometry(0.26, 0.032, 16, 32, Math.PI);
+    upperLipGeo.rotateX(Math.PI * 0.42);
+    upperLipGeo.translate(0, -0.28, 1.10);
     const upperLipMesh = new THREE.Mesh(upperLipGeo, darkTrimMat);
     headGroup.add(upperLipMesh);
 
@@ -339,6 +470,13 @@ export default function RobotAvatar({
     const chinMesh = new THREE.Mesh(chinGeo, beigeFaceMat);
     jawPivot.add(chinMesh);
 
+    // Sculpted Lower Lip Rim on Jaw
+    const lowerLipGeo = new THREE.TorusGeometry(0.22, 0.028, 16, 32, Math.PI);
+    lowerLipGeo.rotateX(-Math.PI * 0.42);
+    lowerLipGeo.translate(0, 0.12, 0.38);
+    const lowerLipMesh = new THREE.Mesh(lowerLipGeo, darkTrimMat);
+    jawPivot.add(lowerLipMesh);
+
     // Dark Inner Mouth Cavity
     const mouthInteriorGeo = new THREE.CylinderGeometry(0.24, 0.32, 0.16, 24);
     mouthInteriorGeo.translate(0, 0.02, 0.26);
@@ -349,17 +487,45 @@ export default function RobotAvatar({
     const mouthInteriorMesh = new THREE.Mesh(mouthInteriorGeo, mouthInteriorMat);
     jawPivot.add(mouthInteriorMesh);
 
-    // Tongue / Speech Acoustic Sensor Accent
-    const tongueGeo = new THREE.SphereGeometry(0.14, 16, 16);
-    tongueGeo.scale(1.3, 0.4, 1.1);
-    tongueGeo.translate(0, 0.05, 0.32);
-    const tongueMat = new THREE.MeshBasicMaterial({
-      color: 0x38bdf8,
-      transparent: true,
-      opacity: 0.85
+    // --- SCULPTED ADORABLE PUPPY PINK TONGUE ---
+    const tonguePivot = new THREE.Group();
+    tonguePivot.position.set(0, 0.04, 0.32);
+
+    const tongueShape = new THREE.Shape();
+    tongueShape.moveTo(-0.12, 0);
+    tongueShape.lineTo(-0.12, 0.28);
+    tongueShape.bezierCurveTo(-0.12, 0.42, 0.12, 0.42, 0.12, 0.28);
+    tongueShape.lineTo(0.12, 0);
+    tongueShape.closePath();
+
+    const tongueGeo = new THREE.ExtrudeGeometry(tongueShape, {
+      depth: 0.045,
+      bevelEnabled: true,
+      bevelSegments: 4,
+      bevelSize: 0.02,
+      bevelThickness: 0.02
     });
+    tongueGeo.center();
+    tongueGeo.rotateX(-Math.PI * 0.45);
+
+    const tongueMat = new THREE.MeshStandardMaterial({
+      color: 0xf472b6, // Sweet puppy pink
+      roughness: 0.35,
+      metalness: 0.04
+    });
+
     const tongueMesh = new THREE.Mesh(tongueGeo, tongueMat);
-    jawPivot.add(tongueMesh);
+    tonguePivot.add(tongueMesh);
+
+    // Tongue Center Groove / Cleft Line
+    const tongueGrooveGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.32, 8);
+    tongueGrooveGeo.rotateX(-Math.PI * 0.45);
+    tongueGrooveGeo.translate(0, 0.03, 0);
+    const tongueGrooveMat = new THREE.MeshBasicMaterial({ color: 0xdb2777 });
+    const tongueGroove = new THREE.Mesh(tongueGrooveGeo, tongueGrooveMat);
+    tonguePivot.add(tongueGroove);
+
+    jawPivot.add(tonguePivot);
 
     headGroup.add(jawPivot);
 
@@ -655,23 +821,36 @@ export default function RobotAvatar({
       leftEarPivot.rotation.x = -0.15 + earSwayL;
       rightEarPivot.rotation.x = -0.15 + earSwayR;
 
-      // 6. Articulated 3D Mouth & Jaw Movement (Speech Reactive & Panting)
+      // 6. Articulated 3D Mouth, Lips & Tongue Movement (Speech Reactive & Panting)
       let targetJawOpen = 0;
       if (currentStatus === 'speaking') {
         // Talking/barking speech articulation
         targetJawOpen = Math.abs(Math.sin(elapsedTime * 14)) * 0.22 + Math.abs(Math.sin(elapsedTime * 9)) * 0.1;
+        tonguePivot.position.z = 0.35 + Math.sin(elapsedTime * 14) * 0.03;
+        tonguePivot.rotation.x = -0.08 + Math.sin(elapsedTime * 12) * 0.04;
+        tonguePivot.rotation.z = 0;
       } else if (currentStatus === 'happy') {
-        // Happy panting puppy smile
-        targetJawOpen = 0.2 + Math.sin(elapsedTime * 6) * 0.04;
+        // Happy panting puppy smile with tongue extended & lolling
+        targetJawOpen = 0.22 + Math.sin(elapsedTime * 6) * 0.04;
+        tonguePivot.position.z = 0.44 + Math.sin(elapsedTime * 8) * 0.04;
+        tonguePivot.rotation.x = -0.22 + Math.sin(elapsedTime * 8) * 0.06;
+        tonguePivot.rotation.z = Math.sin(elapsedTime * 10) * 0.08;
       } else if (currentStatus === 'listening') {
         // Attentive slightly parted jaw
         targetJawOpen = 0.06;
+        tonguePivot.position.z = 0.31;
+        tonguePivot.rotation.set(0, 0, 0);
       } else {
         // Subtle natural breathing with occasional cute yawn
         if (Math.sin(elapsedTime * 0.5) > 0.95) {
-          targetJawOpen = Math.sin(elapsedTime * 8) * 0.12;
+          targetJawOpen = Math.sin(elapsedTime * 8) * 0.14;
+          tonguePivot.position.z = 0.39;
+          tonguePivot.rotation.x = -0.16;
+          tonguePivot.rotation.z = 0;
         } else {
           targetJawOpen = 0;
+          tonguePivot.position.z = 0.28;
+          tonguePivot.rotation.set(0, 0, 0);
         }
       }
       jawPivot.rotation.x = targetJawOpen;
@@ -754,10 +933,16 @@ export default function RobotAvatar({
       faceGeo.dispose();
       snoutGeo.dispose();
       noseGeo.dispose();
+      moustacheGeo.dispose();
+      whiskerNodeGeo.dispose();
+      whiskerHairGeo.dispose();
+      philtrumGeo.dispose();
       upperLipGeo.dispose();
       chinGeo.dispose();
+      lowerLipGeo.dispose();
       mouthInteriorGeo.dispose();
       tongueGeo.dispose();
+      tongueGrooveGeo.dispose();
       eyeGeo.dispose();
       socketRimGeo.dispose();
       eyelidGeo.dispose();
@@ -766,6 +951,10 @@ export default function RobotAvatar({
       ring1Geo.dispose();
       ring2Geo.dispose();
       particleGeo.dispose();
+      chassisTex.dispose();
+      faceTex.dispose();
+      earTex.dispose();
+      eyeTexture.dispose();
     };
   }, [compact]);
 

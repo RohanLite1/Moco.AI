@@ -1,9 +1,14 @@
 import { ipcMain, Notification } from 'electron';
-import { generateStreamingResponse } from '../services/geminiService.js';
+import { generateStreamingResponse, checkOllamaHealth } from '../services/ollamaService.js';
 import { getItem, setItem } from '../services/storageService.js';
 
 export function setupIpcHandlers(mainWindow) {
-  // Handle AI prompt streaming
+  // Check Ollama connectivity & available models
+  ipcMain.handle('ai:health', async () => {
+    return checkOllamaHealth();
+  });
+
+  // Handle AI prompt streaming via local Ollama
   ipcMain.on('ai:prompt', async (event, { prompt, channelId }) => {
     try {
       const onStatus = (status) => {

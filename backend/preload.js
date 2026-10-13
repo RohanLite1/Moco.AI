@@ -24,6 +24,8 @@ contextBridge.exposeInMainWorld('mocoApi', {
     });
   },
 
+  checkAIHealth: () => ipcRenderer.invoke('ai:health'),
+
   // AI Status Listener for 3D Avatar/Visualizer
   onAIStatus: (callback) => {
     const handler = (event, status) => callback(status);

@@ -6,46 +6,46 @@ import {
   SkipForward,
   Volume2,
   VolumeX,
-  Radio,
   Headphones,
   Sparkles,
   Zap,
   CloudRain,
   Moon,
-  Brain
+  Brain,
+  Music2
 } from 'lucide-react';
 import '../styles/music.css';
 
 const SOUND_LIBRARY = [
-  // COLUMN 1: FOCUS 🧠
+  // COLUMN 1: FOCUS 🧠 (Real User Focus Audio Files)
   {
     category: 'focus',
     categoryName: 'Focus 🧠',
     icon: Brain,
     tracks: [
       {
-        id: 'alpha-432',
+        id: 'deep-alpha',
         title: 'Deep Alpha',
-        desc: '432Hz Binaural Beat',
-        type: 'binaural',
-        freqs: [216, 432, 440],
-        badge: 'Focus'
+        desc: '432Hz Focus Waveform',
+        audioSrc: './audio/deep-alpha.mp3',
+        type: 'audio-file',
+        badge: 'Focus MP3'
       },
       {
         id: 'cyber-synth',
         title: 'Cyber Synth',
-        desc: 'Neon Focus Chords',
-        type: 'synth',
-        freqs: [130.81, 164.81, 196.0, 246.94],
-        badge: 'Synth'
+        desc: 'Neon Focus Synthwave',
+        audioSrc: './audio/cyber-synth.mp3',
+        type: 'audio-file',
+        badge: 'Focus MP3'
       },
       {
-        id: 'lofi-study',
+        id: 'lofi-chill',
         title: 'Lo-Fi Chill',
-        desc: 'Midnight Study Haze',
-        type: 'lofi',
-        freqs: [146.83, 174.61, 220.0, 261.63, 329.63],
-        badge: 'Lo-Fi'
+        desc: 'Midnight Study Beats',
+        audioSrc: './audio/lofi-chill.mp3',
+        type: 'audio-file',
+        badge: 'Focus MP3'
       }
     ]
   },
@@ -59,7 +59,7 @@ const SOUND_LIBRARY = [
         id: 'peak-drive',
         title: 'Peak Drive',
         desc: 'Gamma Energy Pulse',
-        type: 'gamma',
+        type: 'synth',
         freqs: [200, 240, 480],
         badge: 'Energy'
       },
@@ -90,7 +90,7 @@ const SOUND_LIBRARY = [
       {
         id: 'rain-shower',
         title: 'Rain Shower',
-        desc: 'Warm Filtered Noise',
+        desc: 'Warm Filtered Rainfall',
         type: 'noise-rain',
         freqs: [380, 800],
         badge: 'Rain'
@@ -99,7 +99,7 @@ const SOUND_LIBRARY = [
         id: 'tibetan-bowl',
         title: 'Zen Bowl',
         desc: 'Singing Harmonics',
-        type: 'zen',
+        type: 'synth',
         freqs: [108, 216, 324, 432],
         badge: 'Zen'
       },
@@ -123,7 +123,7 @@ const SOUND_LIBRARY = [
         id: 'theta-rest',
         title: 'Theta Rest',
         desc: '4Hz Deep Sleep Tone',
-        type: 'binaural',
+        type: 'synth',
         freqs: [100, 104, 208],
         badge: 'Theta'
       },
@@ -156,15 +156,18 @@ export default function MusicWidget() {
   const [currentTrack, setCurrentTrack] = useState(ALL_TRACKS[0]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.5);
+  const [currentTimeSec, setCurrentTimeSec] = useState(0);
+  const [durationSec, setDurationSec] = useState(0);
 
+  const audioRef = useRef(null);
   const audioCtxRef = useRef(null);
   const masterGainRef = useRef(null);
   const nodesRef = useRef([]);
 
   const currentIdx = ALL_TRACKS.findIndex((t) => t.id === currentTrack.id);
 
-  // Stop generative audio cleanly
-  const stopAudio = () => {
+  // Stop synthetic audio cleanly
+  const stopSynth = () => {
     nodesRef.current.forEach((node) => {
       try {
         if (node.stop) node.stop();
@@ -176,12 +179,11 @@ export default function MusicWidget() {
       audioCtxRef.current.close().catch(() => {});
       audioCtxRef.current = null;
     }
-    setIsPlaying(false);
   };
 
-  // Start generative audio engine for selected track
-  const startAudio = (track) => {
-    stopAudio();
+  // Start synthetic audio engine for non-file ambient tracks
+  const startSynth = (track) => {
+    stopSynth();
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       const ctx = new AudioCtx();
@@ -194,8 +196,8 @@ export default function MusicWidget() {
 
       const activeNodes = [];
 
-      if (track.type.startsWith('noise')) {
-        // Noise buffer generator for Rain / Stream
+      if (track.type && track.type.startsWith('noise')) {
+        // Generative pink noise for rain/water
         const bufferSize = ctx.sampleRate * 2;
         const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         const output = noiseBuffer.getChannelData(0);
@@ -203,7 +205,6 @@ export default function MusicWidget() {
 
         for (let i = 0; i < bufferSize; i++) {
           const white = Math.random() * 2 - 1;
-          // Pink noise filter
           output[i] = (lastOut + 0.02 * white) / 1.02;
           lastOut = output[i];
           output[i] *= 3.5;
@@ -215,15 +216,15 @@ export default function MusicWidget() {
 
         const filter = ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(track.freqs[0], ctx.currentTime);
+        filter.frequency.setValueAtTime(track.freqs ? track.freqs[0] : 400, ctx.currentTime);
 
         whiteNoise.connect(filter);
         filter.connect(masterGain);
         whiteNoise.start();
 
         activeNodes.push(whiteNoise, filter);
-      } else {
-        // Multi-oscillator synthesis (Harmonics, Binaural, Synthwave pads)
+      } else if (track.freqs) {
+        // Multi-oscillator harmonic chord generator
         track.freqs.forEach((f, idx) => {
           const osc = ctx.createOscillator();
           const subGain = ctx.createGain();
@@ -248,18 +249,53 @@ export default function MusicWidget() {
     }
   };
 
+  // Start whichever engine corresponds to the track
+  const startTrack = (track) => {
+    if (track.audioSrc) {
+      // Real Audio File playback
+      stopSynth();
+      const audio = audioRef.current;
+      if (audio) {
+        audio.src = track.audioSrc;
+        audio.volume = volume;
+        audio.play().then(() => {
+          setIsPlaying(true);
+        }).catch((err) => {
+          console.warn('Audio play error:', err);
+        });
+      }
+    } else {
+      // Generative Ambient sound
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      startSynth(track);
+    }
+  };
+
+  const stopAll = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    stopSynth();
+    setIsPlaying(false);
+  };
+
   const togglePlay = () => {
     if (isPlaying) {
-      stopAudio();
+      stopAll();
     } else {
-      startAudio(currentTrack);
+      startTrack(currentTrack);
     }
   };
 
   const selectTrack = (track) => {
     setCurrentTrack(track);
     if (isPlaying) {
-      startAudio(track);
+      startTrack(track);
+    } else if (track.audioSrc && audioRef.current) {
+      // Pre-load metadata
+      audioRef.current.src = track.audioSrc;
     }
   };
 
@@ -276,6 +312,9 @@ export default function MusicWidget() {
   const handleVolumeChange = (e) => {
     const newVol = parseFloat(e.target.value);
     setVolume(newVol);
+    if (audioRef.current) {
+      audioRef.current.volume = newVol;
+    }
     if (masterGainRef.current && audioCtxRef.current) {
       masterGainRef.current.gain.setValueAtTime(
         newVol * 0.14,
@@ -284,12 +323,57 @@ export default function MusicWidget() {
     }
   };
 
+  const handleSeek = (e) => {
+    if (!currentTrack.audioSrc || !audioRef.current || !durationSec) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, clickX / rect.width));
+    audioRef.current.currentTime = pct * durationSec;
+    setCurrentTimeSec(pct * durationSec);
+  };
+
+  const formatTime = (secs) => {
+    if (isNaN(secs) || secs <= 0) return '0:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  // HTML5 audio event listeners
   useEffect(() => {
-    return () => stopAudio();
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleTimeUpdate = () => setCurrentTimeSec(audio.currentTime);
+    const handleLoadedMetadata = () => setDurationSec(audio.duration || 0);
+    const handleEnded = () => {
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    };
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('ended', handleEnded);
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('ended', handleEnded);
+    };
   }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => stopAll();
+  }, []);
+
+  const progressPercent = durationSec > 0 ? (currentTimeSec / durationSec) * 100 : 0;
 
   return (
     <div className="music-container">
+      {/* Hidden Native Audio Element for Focus Songs */}
+      <audio ref={audioRef} loop preload="metadata" />
+
       <div className="music-card">
         {/* =================================================================== */}
         {/* 1. TOP HEADER                                                       */}
@@ -301,7 +385,7 @@ export default function MusicWidget() {
             </div>
             <div>
               <h2 className="music-header-title">Neural Ambience</h2>
-              <p className="music-header-sub">Generative Soundscape Engine</p>
+              <p className="music-header-sub">Focus Songs & Soundscapes</p>
             </div>
           </div>
 
@@ -319,7 +403,7 @@ export default function MusicWidget() {
 
         {/* =================================================================== */}
         {/* 2. AUDIO PLAYER DECK                                                */}
-        {/* Transport Controls Row on top, then Title & Details below           */}
+        {/* Play/Pause/Prev/Next on top, Track Info & Progress below             */}
         {/* =================================================================== */}
         <div className="music-player-deck">
           {/* Controls Row: Previous, Play/Pause, Next */}
@@ -364,13 +448,33 @@ export default function MusicWidget() {
             </button>
           </div>
 
-          {/* Below Controls: Track Name & Title Things */}
+          {/* Below Controls: Track Name & Title Information */}
           <div className="music-track-info">
             <div className="music-track-title">{currentTrack.title}</div>
             <div className="music-track-sub">
               {currentTrack.categoryName} • {currentTrack.desc}
             </div>
           </div>
+
+          {/* Interactive Scrub Progress Bar for Audio Files */}
+          {currentTrack.audioSrc && (
+            <div className="music-progress-wrap">
+              <div
+                className="music-progress-bar"
+                onClick={handleSeek}
+                title="Click to seek"
+              >
+                <div
+                  className="music-progress-fill"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <div className="music-time-meta">
+                <span>{formatTime(currentTimeSec)}</span>
+                <span>{formatTime(durationSec)}</span>
+              </div>
+            </div>
+          )}
 
           {/* Real-Time Bouncing Equalizer Bars */}
           <div className="music-equalizer">

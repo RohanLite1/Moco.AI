@@ -458,3 +458,47 @@
 :not(.theme-light) .music-sound-btn-desc {
   color: #94a3b8;
 }
+
+/* Track Progress Bar & Time Stamps */
+.music-progress-wrap {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.music-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 9999px;
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+:not(.theme-light) .music-progress-bar {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.music-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #22d3ee, #6366f1);
+  border-radius: 9999px;
+  transition: width 0.15s linear;
+}
+
+.music-time-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #64748b;
+}
+
+:not(.theme-light) .music-time-meta {
+  color: #94a3b8;
+}

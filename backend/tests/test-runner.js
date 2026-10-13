@@ -12,6 +12,7 @@ import { SnakeGame } from '../services/gameEngines/snakeEngine.js';
 import { checkOllamaHealth, generateStreamingResponse } from '../services/ollamaService.js';
 import { translateText } from '../services/translatorService.js';
 import { getItem, setItem } from '../services/storageService.js';
+import { processVoiceCommand } from '../services/voiceAgentService.js';
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -86,6 +87,16 @@ async function runAutomatedTests() {
   if (health.online) {
     console.log(`     Available Models: ${health.models.join(', ')}`);
   }
+
+  // 8. Autonomous Voice Agent Tests
+  const v1 = await processVoiceCommand('switch to pomodoro timer');
+  assert('Voice Agent: Navigated to pomodoro', v1.action === 'NAVIGATE' && v1.target === 'pomodoro');
+
+  const v2 = await processVoiceCommand('calculate 25 * 4');
+  assert('Voice Agent: Calculated math 25 * 4 == 100', v2.action === 'CALCULATE' && v2.result === 100);
+
+  const v3 = await processVoiceCommand('open tasks');
+  assert('Voice Agent: Navigated to todo queue', v3.action === 'NAVIGATE' && v3.target === 'todo');
 
   console.log(`\nResults: ${passed}/${total} tests passed.\n`);
 }

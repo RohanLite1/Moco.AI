@@ -61,6 +61,14 @@ contextBridge.exposeInMainWorld('mocoApi', {
   mascotHover: (isHovered) => ipcRenderer.send('mascot:hover', isHovered),
   mascotClick: () => ipcRenderer.send('mascot:click'),
 
+  // 7. Autonomous Voice Agent (No TTS, action & tool routing)
+  processVoiceCommand: (command) => ipcRenderer.invoke('voice:command', { command }),
+  onVoiceNavigate: (callback) => {
+    const handler = (event, target) => callback(target);
+    ipcRenderer.on('voice:navigate', handler);
+    return () => ipcRenderer.removeListener('voice:navigate', handler);
+  },
+
   // Window Controls
   closeApp: () => ipcRenderer.send('window:close'),
   hideWindow: () => ipcRenderer.send('window:hide'),

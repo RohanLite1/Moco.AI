@@ -12,6 +12,7 @@ import { capturePrimaryScreen, analyzeScreen } from '../services/screenService.j
 import { getItem, setItem } from '../services/storageService.js';
 import { getStartupSetting, setStartupSetting } from '../services/settingsService.js';
 import { createMascotWindow, handleMascotHover, handleMascotClick, destroyMascotWindow } from '../services/mascotService.js';
+import { processVoiceCommand } from '../services/voiceAgentService.js';
 
 // Stateful game instances per session
 let activeChess = new ChessGame();
@@ -168,6 +169,24 @@ export function setupIpcHandlers(mainWindow) {
 
   ipcMain.on('mascot:click', () => {
     handleMascotClick(mainWindow);
+  });
+
+  // --- 7. Autonomous Voice Agent ---
+  ipcMain.handle('voice:command', async (event, { command }) => {
+    const onStatus = (status) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('ai:status-change', status);
+      }
+    };
+    const result = await processVoiceCommand(command, onStatus);
+
+    // If navigation action was detected, send event to frontend to switch tabs!
+    if (result.action === 'NAVIGATE' && result.target) {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('voice:navigate', result.target);
+      }
+    }
+    return result;
   });
 
   // --- Window controls ---

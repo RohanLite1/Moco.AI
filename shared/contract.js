@@ -71,6 +71,10 @@ export const IPC_CHANNELS = {
  * - mascotHover(isHovered: boolean): void
  * - mascotClick(): void
  * 
+ * --- Autonomous Voice Agent (No TTS, action & tool routing) ---
+ * - processVoiceCommand(command: string): Promise<{ success: boolean, action: string, reply: string, target?: string, data?: any }>
+ * - onVoiceNavigate(callback: (targetTab: string) => void): () => void
+ * 
  * --- System & Storage ---
  * - closeApp(): void
  * - hideWindow(): void

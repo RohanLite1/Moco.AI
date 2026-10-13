@@ -49,7 +49,7 @@ const SOUND_LIBRARY = [
       }
     ]
   },
-  // COLUMN 2: MOTIVATION
+  // COLUMN 2: MOTIVATION (Real User Motivation Audio Files)
   {
     category: 'motivation',
     categoryName: 'Motivation',
@@ -59,25 +59,25 @@ const SOUND_LIBRARY = [
         id: 'peak-drive',
         title: 'Peak Drive',
         desc: 'Gamma Energy Pulse',
-        type: 'synth',
-        freqs: [200, 240, 480],
-        badge: 'Energy'
+        audioSrc: './audio/peak-drive.mp3',
+        type: 'audio-file',
+        badge: 'Motivation MP3'
       },
       {
         id: 'solar-rise',
         title: 'Solar Rise',
         desc: 'Bright Major Chords',
-        type: 'synth',
-        freqs: [174.61, 220.0, 261.63, 349.23],
-        badge: 'Uplift'
+        audioSrc: './audio/solar-rise.mp3',
+        type: 'audio-file',
+        badge: 'Motivation MP3'
       },
       {
-        id: 'electric-zen',
+        id: 'electric-flow',
         title: 'Electric Flow',
         desc: 'Harmonic Arpeggio',
-        type: 'synth',
-        freqs: [220, 277.18, 329.63, 440],
-        badge: 'Clarity'
+        audioSrc: './audio/electric-flow.mp3',
+        type: 'audio-file',
+        badge: 'Motivation MP3'
       }
     ]
   },

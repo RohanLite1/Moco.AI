@@ -1,7 +1,10 @@
-import { app, BrowserWindow, globalShortcut, screen } from 'electron';
+import electron from 'electron';
+const { app, BrowserWindow, globalShortcut, screen } = electron;
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { setupIpcHandlers } from './ipc/index.js';
+import { getStartupSetting } from './services/settingsService.js';
+import { createMascotWindow } from './services/mascotService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,7 +23,7 @@ async function createWindow() {
     hasShadow: true,
     alwaysOnTop: false,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
       contextIsolation: true
     }
@@ -29,8 +32,16 @@ async function createWindow() {
   // Setup backend IPC handlers
   setupIpcHandlers(mainWindow);
 
-  // Load URL (Vite dev server or build)
-  const isDev = process.env.NODE_ENV !== 'production';
+  mainWindow.webContents.on('preload-error', (event, preloadPath, error) => {
+    console.error('CRITICAL: PRELOAD SCRIPT ERROR:', preloadPath, error);
+  });
+
+  mainWindow.webContents.on('console-message', (event, level, message) => {
+    console.log('[BROWSER LOG]:', message);
+  });
+
+  // Load URL (Vite dev server in dev, or local index.html in production build)
+  const isDev = !app.isPackaged && process.env.NODE_ENV !== 'production';
   if (isDev) {
     // Wait briefly for Vite server if needed
     const loadDev = async (retries = 10) => {
@@ -46,7 +57,7 @@ async function createWindow() {
     };
     loadDev();
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../frontend/dist/index.html'));
+    mainWindow.loadFile(path.join(app.getAppPath(), 'frontend/dist/index.html'));
   }
 
   mainWindow.once('ready-to-show', () => {
@@ -76,6 +87,12 @@ async function createWindow() {
 
 app.whenReady().then(() => {
   createWindow();
+
+  // If open on startup is enabled, spawn the floating dog logo mascot
+  const startup = getStartupSetting();
+  if (startup.openAtLogin) {
+    createMascotWindow(mainWindow);
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

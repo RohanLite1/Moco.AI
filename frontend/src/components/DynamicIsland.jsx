@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Sparkles,
   ChevronDown,
@@ -32,6 +32,156 @@ export default function DynamicIsland({
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [voiceStatusText, setVoiceStatusText] = useState('');
+  const [batteryPercent, setBatteryPercent] = useState(100);
+  const [isCharging, setIsCharging] = useState(false);
+  const recognitionRef = useRef(null);
+  const latestTranscriptRef = useRef('');
+
+  // Real device battery telemetry
+  useEffect(() => {
+    let isMounted = true;
+
+    const queryBattery = async () => {
+      // 1. Try modern browser Battery API (Edge / Chrome / Chromium)
+      if (typeof navigator !== 'undefined' && 'getBattery' in navigator) {
+        try {
+          const battery = await navigator.getBattery();
+          if (isMounted) {
+            setBatteryPercent(Math.round(battery.level * 100));
+            setIsCharging(Boolean(battery.charging));
+          }
+          const onLevelChange = () => {
+            if (isMounted) setBatteryPercent(Math.round(battery.level * 100));
+          };
+          const onChargingChange = () => {
+            if (isMounted) setIsCharging(Boolean(battery.charging));
+          };
+          battery.addEventListener('levelchange', onLevelChange);
+          battery.addEventListener('chargingchange', onChargingChange);
+          return;
+        } catch (_) {}
+      }
+
+      // 2. Query Moco backend API (Windows CIM Win32_Battery via Electron IPC or local dev server)
+      try {
+        const info = await api.getDeviceBattery?.();
+        if (info && info.hasBattery && isMounted) {
+          setBatteryPercent(info.percent);
+          setIsCharging(Boolean(info.isCharging));
+        }
+      } catch (_) {}
+    };
+
+    queryBattery();
+    const interval = setInterval(queryBattery, 30000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Initialize Speech Recognition once without tearing down on each transcript update
+  useEffect(() => {
+    const SpeechRecognition =
+      typeof window !== 'undefined' &&
+      (window.SpeechRecognition || window.webkitSpeechRecognition);
+
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      latestTranscriptRef.current = '';
+      setVoiceTranscript('Listening...');
+      setVoiceStatusText('');
+      onStatusChange?.('listening');
+    };
+
+    recognition.onresult = (event) => {
+      let fullText = '';
+      for (let i = 0; i < event.results.length; i++) {
+        fullText += event.results[i][0].transcript;
+      }
+      latestTranscriptRef.current = fullText;
+      setVoiceTranscript(fullText);
+      setVoiceStatusText('');
+    };
+
+    recognition.onerror = (e) => {
+      console.warn('Voice recognition note:', e.error);
+      onStatusChange?.('idle');
+      setVoiceTranscript('');
+      setVoiceStatusText('');
+    };
+
+    recognition.onend = async () => {
+      const finalCmd = latestTranscriptRef.current.trim();
+      if (finalCmd && finalCmd !== 'Listening...') {
+        onStatusChange?.('thinking');
+        setVoiceStatusText(`Routing: "${finalCmd}"...`);
+        try {
+          const res = await api.processVoiceCommand(finalCmd);
+          if (res?.action === 'NAVIGATE' && res?.target) {
+            setActiveTab?.(res.target);
+            setVoiceStatusText(`Switched to ${res.target}`);
+            onStatusChange?.('happy');
+            setTimeout(() => {
+              onStatusChange?.('idle');
+              setVoiceStatusText('');
+              setVoiceTranscript('');
+            }, 3000);
+          } else {
+            setVoiceStatusText(res?.reply ? `"${res.reply}"` : `Done`);
+            onStatusChange?.('speaking');
+            setTimeout(() => {
+              onStatusChange?.('idle');
+              setVoiceStatusText('');
+              setVoiceTranscript('');
+            }, 3500);
+          }
+        } catch (err) {
+          console.error('Voice routing error:', err);
+          onStatusChange?.('idle');
+          setVoiceTranscript('');
+          setVoiceStatusText('');
+        }
+      } else {
+        onStatusChange?.('idle');
+        setVoiceTranscript('');
+        setVoiceStatusText('');
+      }
+    };
+
+    recognitionRef.current = recognition;
+    return () => {
+      try { recognition.abort(); } catch (_) {}
+    };
+  }, [onStatusChange, setActiveTab]);
+
+  const handleMicClick = (e) => {
+    e?.stopPropagation();
+    if (!recognitionRef.current) {
+      onStatusChange?.(aiStatus === 'listening' ? 'idle' : 'listening');
+      return;
+    }
+    if (aiStatus === 'listening') {
+      try { recognitionRef.current.stop(); } catch (_) {}
+    } else {
+      latestTranscriptRef.current = '';
+      setVoiceTranscript('');
+      setVoiceStatusText('');
+      try {
+        recognitionRef.current.start();
+      } catch (err) {
+        console.warn('Recognition start exception:', err);
+      }
+    }
+  };
 
   // ---------------------------------------------------------------------------
   // SYSTEM COLOR SCHEME DETECTION & THEME STATE
@@ -139,11 +289,19 @@ export default function DynamicIsland({
                   <span>Moco Robodog</span>
                 </div>
                 <div className="pill-subtitle">
-                  {aiStatus === 'thinking' && 'Analyzing query...'}
-                  {aiStatus === 'speaking' && 'Streaming voice audio...'}
-                  {aiStatus === 'listening' && 'Listening attentively...'}
-                  {aiStatus === 'happy' && 'Joyful & Ready!'}
-                  {(aiStatus === 'ready' || aiStatus === 'idle' || !aiStatus) && 'Moco Online • Click to expand'}
+                  {voiceStatusText ? (
+                    <span style={{ color: '#38bdf8', fontWeight: 600 }}>{voiceStatusText}</span>
+                  ) : voiceTranscript ? (
+                    <span style={{ color: '#38bdf8' }}>{`Hearing: "${voiceTranscript}"`}</span>
+                  ) : (
+                    <>
+                      {aiStatus === 'thinking' && 'Analyzing query...'}
+                      {aiStatus === 'speaking' && 'Streaming voice audio...'}
+                      {aiStatus === 'listening' && 'Listening attentively...'}
+                      {aiStatus === 'happy' && 'Joyful & Ready!'}
+                      {(aiStatus === 'ready' || aiStatus === 'idle' || !aiStatus) && 'Moco Online • Click to expand'}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -165,9 +323,12 @@ export default function DynamicIsland({
             {/* Right: Telemetry & Quick Action Controls */}
             <div className="pill-actions">
               {/* Battery & Telemetry Badge */}
-              <div className="pill-badge" title="Robodog Core Battery 98%">
+              <div
+                className="pill-badge"
+                title={`Device Battery: ${batteryPercent}%${isCharging ? ' (Charging ⚡)' : ''}`}
+              >
                 <Battery size={13} color={activeTheme === 'light' ? '#0284c7' : '#38bdf8'} />
-                <span>98%</span>
+                <span>{batteryPercent}%</span>
               </div>
 
               {/* Theme Indicator & Toggle */}
@@ -183,12 +344,9 @@ export default function DynamicIsland({
               {/* Mic / Listen Toggle */}
               <button
                 type="button"
-                className="pill-btn"
-                title="Voice Listen Toggle"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onStatusChange?.(aiStatus === 'listening' ? 'ready' : 'listening');
-                }}
+                className={`pill-btn ${aiStatus === 'listening' ? 'text-red-400 border-red-500' : ''}`}
+                title={aiStatus === 'listening' ? 'Stop Listening' : 'Voice Command Mic'}
+                onClick={handleMicClick}
               >
                 <Mic size={14} />
               </button>
@@ -219,7 +377,9 @@ export default function DynamicIsland({
                 <span>Moco.AI</span>
                 <div className="island-status-pill">
                   <span className={`pill-status-dot ${aiStatus}`} />
-                  <span>{(aiStatus === 'idle' || aiStatus === 'ready' || !aiStatus) ? 'ONLINE' : aiStatus.toUpperCase()}</span>
+                  <span>
+                    {voiceStatusText ? voiceStatusText : voiceTranscript ? `Hearing: "${voiceTranscript}"` : ((aiStatus === 'idle' || aiStatus === 'ready' || !aiStatus) ? 'ONLINE' : aiStatus.toUpperCase())}
+                  </span>
                 </div>
               </div>
 
@@ -314,7 +474,13 @@ export default function DynamicIsland({
                         <button
                           key={exp.id}
                           type="button"
-                          onClick={() => onStatusChange?.(exp.id)}
+                          onClick={() => {
+                            if (exp.id === 'listening') {
+                              handleMicClick();
+                            } else {
+                              onStatusChange?.(exp.id);
+                            }
+                          }}
                           className={`expression-btn ${isActive ? 'active' : ''}`}
                         >
                           <Icon size={12} />

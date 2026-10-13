@@ -34,6 +34,7 @@ export default function DynamicIsland({
   const [isPinned, setIsPinned] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState('');
   const [voiceStatusText, setVoiceStatusText] = useState('');
+  const [voiceAnswer, setVoiceAnswer] = useState('');
   const [batteryPercent, setBatteryPercent] = useState(100);
   const [isCharging, setIsCharging] = useState(false);
   const recognitionRef = useRef(null);
@@ -128,27 +129,30 @@ export default function DynamicIsland({
           const res = await api.processVoiceCommand(finalCmd);
           if (res?.action === 'NAVIGATE' && res?.target) {
             setActiveTab?.(res.target);
-            setVoiceStatusText(`Switched to ${res.target}`);
+            const navMsg = `Switched to ${res.target.toUpperCase()} tab.`;
+            setVoiceStatusText(navMsg);
+            setVoiceAnswer(navMsg);
             onStatusChange?.('happy');
             setTimeout(() => {
               onStatusChange?.('idle');
               setVoiceStatusText('');
-              setVoiceTranscript('');
             }, 3000);
           } else {
-            setVoiceStatusText(res?.reply ? `"${res.reply}"` : `Done`);
+            const answerMsg = res?.reply || 'Command completed successfully.';
+            setVoiceStatusText(`"${answerMsg}"`);
+            setVoiceAnswer(answerMsg);
             onStatusChange?.('speaking');
             setTimeout(() => {
               onStatusChange?.('idle');
               setVoiceStatusText('');
-              setVoiceTranscript('');
-            }, 3500);
+            }, 4500);
           }
         } catch (err) {
           console.error('Voice routing error:', err);
+          const errMsg = `Error: ${err.message || 'Could not process query'}`;
           onStatusChange?.('idle');
-          setVoiceTranscript('');
-          setVoiceStatusText('');
+          setVoiceAnswer(errMsg);
+          setVoiceStatusText(errMsg);
         }
       } else {
         onStatusChange?.('idle');
@@ -175,6 +179,7 @@ export default function DynamicIsland({
       latestTranscriptRef.current = '';
       setVoiceTranscript('');
       setVoiceStatusText('');
+      setVoiceAnswer(''); // Clear prior answer when initiating new voice input
       try {
         recognitionRef.current.start();
       } catch (err) {
@@ -474,6 +479,41 @@ export default function DynamicIsland({
                       setTimeout(() => onStatusChange?.('ready'), 2500);
                     }}
                   />
+                </div>
+
+                {/* Voice Command Response Box beneath 3D Robot */}
+                <div className="voice-answer-box">
+                  <div className="voice-answer-badge">
+                    <div className="voice-answer-badge-left">
+                      <Sparkles size={12} color={activeTheme === 'light' ? '#0284c7' : '#38bdf8'} />
+                      <span>{voiceAnswer ? 'MOCO RESPONSE' : aiStatus === 'listening' ? 'LISTENING...' : aiStatus === 'thinking' ? 'THINKING...' : 'VOICE ASSISTANT'}</span>
+                    </div>
+                    {voiceAnswer && (
+                      <button
+                        type="button"
+                        className="voice-answer-close"
+                        onClick={() => setVoiceAnswer('')}
+                        title="Dismiss answer"
+                      >
+                        <X size={11} />
+                      </button>
+                    )}
+                  </div>
+                  <div className="voice-answer-text">
+                    {voiceAnswer ? (
+                      voiceAnswer
+                    ) : voiceTranscript && voiceTranscript !== 'Listening...' ? (
+                      <span className="hearing-text">{`Hearing: "${voiceTranscript}"`}</span>
+                    ) : aiStatus === 'listening' ? (
+                      <span className="hearing-text">Listening to your voice... Speak now!</span>
+                    ) : aiStatus === 'thinking' ? (
+                      <span className="thinking-text">Searching web & analyzing...</span>
+                    ) : (
+                      <span className="idle-placeholder">
+                        Click 🎙️ or ask a question (e.g. "What is the weather today?", "Open Pomodoro", "Calculate 25 * 4")
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Robotic Dog Expression Commands */}

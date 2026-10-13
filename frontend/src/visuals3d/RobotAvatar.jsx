@@ -730,6 +730,11 @@ export default function RobotAvatar({
     let nextBlinkDuration = 3.2; // Next blink in 3.2s
     let blinkPhase = 0; // 0 = open, >0 = in blink motion
 
+    // Wave timers for random periodic waving & answering gestures
+    let waveTimer = 0;
+    let nextWaveInterval = 6.0; // Next wave in 6-14s
+    const waveDuration = 2.4; // Wave animation lasts 2.4s
+
     let lastStatus = 'idle';
 
     const animate = () => {
@@ -738,6 +743,15 @@ export default function RobotAvatar({
       const elapsedTime = clock.getElapsedTime();
       const currentStatus = statusRef.current;
       const currentTheme = themeRef.current;
+
+      // Update wave timer logic
+      waveTimer += delta;
+      if (waveTimer >= nextWaveInterval + waveDuration) {
+        waveTimer = 0;
+        nextWaveInterval = 7.0 + Math.random() * 8.0; // Random interval between 7s and 15s
+      }
+      const isPeriodicWaving = waveTimer >= nextWaveInterval && waveTimer < nextWaveInterval + waveDuration;
+      const isAnswering = currentStatus === 'speaking';
 
       // Update Iris Texture if status changed
       if (currentStatus !== lastStatus) {
@@ -760,7 +774,7 @@ export default function RobotAvatar({
         rootGroup.position.y = Math.sin(elapsedTime * hoverSpeed) * hoverAmp;
         rootGroup.position.x = Math.sin(elapsedTime * 0.8) * 0.01;
 
-        // 2. Head look-at cursor with expressive puppy tilts
+        // 2. Head look-at cursor with expressive puppy tilts (Inverted horizontal sign to track cursor correctly)
         if (joints.head && initialRotations.head) {
           const init = initialRotations.head;
           const headTilt = Math.sin(elapsedTime * 0.6) * 0.05;
@@ -781,9 +795,9 @@ export default function RobotAvatar({
             statusTiltX = 0.05;
           }
 
-          joints.head.rotation.y = init.y + mouse.x * 0.45 + Math.sin(elapsedTime * 0.4) * 0.02 + statusTiltY;
+          joints.head.rotation.y = init.y - mouse.x * 0.45 + Math.sin(elapsedTime * 0.4) * 0.02 + statusTiltY;
           joints.head.rotation.x = init.x - mouse.y * 0.35 + Math.sin(elapsedTime * 0.6) * 0.02 + statusTiltX;
-          joints.head.rotation.z = init.z - mouse.x * 0.12 + headTilt + statusTiltZ;
+          joints.head.rotation.z = init.z + mouse.x * 0.12 + headTilt + statusTiltZ;
         }
 
         // 3. Antenna spring physics, waggle & bobble
@@ -792,7 +806,7 @@ export default function RobotAvatar({
           const waggleSpeed = currentStatus === 'thinking' ? 12 : currentStatus === 'happy' ? 10 : 3.5;
           const waggleAmp = currentStatus === 'thinking' ? 0.22 : currentStatus === 'happy' ? 0.18 : 0.06;
           const inertiaX = mouse.y * 0.15;
-          const inertiaZ = -mouse.x * 0.2;
+          const inertiaZ = mouse.x * 0.2;
           joints.antenna.rotation.z = init.z + Math.sin(elapsedTime * waggleSpeed) * waggleAmp + inertiaZ;
           joints.antenna.rotation.x = init.x + Math.cos(elapsedTime * (waggleSpeed * 0.8)) * (waggleAmp * 0.6) + inertiaX;
         }
@@ -809,27 +823,48 @@ export default function RobotAvatar({
             earWiggle = Math.sin(elapsedTime * 1.5) * 0.025;
           }
           joints.ears.rotation.x = init.x + earWiggle;
-          joints.ears.rotation.z = init.z + (mouse.x * 0.04);
+          joints.ears.rotation.z = init.z - (mouse.x * 0.04);
         }
 
-        // 5. Left and Right Arms gestures & cute paws
+        // 5. Left and Right Arms: Interactive Waving & Conversational Gestures
         if (joints.leftArm && initialRotations.leftArm && joints.rightArm && initialRotations.rightArm) {
           const initL = initialRotations.leftArm;
           const initR = initialRotations.rightArm;
 
-          if (currentStatus === 'happy') {
-            // Excited celebratory arm waving
-            joints.leftArm.rotation.x = initL.x - 0.4 + Math.sin(elapsedTime * 8) * 0.25;
-            joints.rightArm.rotation.x = initR.x - 0.4 + Math.cos(elapsedTime * 8) * 0.25;
-            joints.leftArm.rotation.z = initL.z - 0.2;
-            joints.rightArm.rotation.z = initR.z + 0.2;
-          } else if (currentStatus === 'speaking') {
-            // Conversational arm gesturing
-            joints.leftArm.rotation.x = initL.x + Math.sin(elapsedTime * 6) * 0.18;
-            joints.rightArm.rotation.x = initR.x + Math.cos(elapsedTime * 5) * 0.15;
+          if (isAnswering) {
+            // Conversational arm gestures while answering speech/questions
+            joints.rightArm.rotation.x = initR.x - 0.75 + Math.sin(elapsedTime * 9) * 0.22;
+            joints.rightArm.rotation.y = initR.y + Math.cos(elapsedTime * 7) * 0.25;
+            joints.rightArm.rotation.z = initR.z + 0.25 + Math.sin(elapsedTime * 6) * 0.12;
+
+            joints.leftArm.rotation.x = initL.x - 0.45 + Math.cos(elapsedTime * 8) * 0.18;
+            joints.leftArm.rotation.y = initL.y - Math.sin(elapsedTime * 6) * 0.15;
+            joints.leftArm.rotation.z = initL.z - 0.18;
+          } else if (isPeriodicWaving) {
+            // Cute periodic waving at random intervals
+            const wavePhase = (waveTimer - nextWaveInterval) / waveDuration; // 0 to 1
+            const waveEnvelope = Math.sin(wavePhase * Math.PI); // Smooth rise and fall
+
+            // Lift right arm up into high wave
+            joints.rightArm.rotation.x = initR.x - (1.25 * waveEnvelope);
+            joints.rightArm.rotation.z = initR.z + (0.35 * waveEnvelope);
+            // Quick friendly paw wave oscillation
+            joints.rightArm.rotation.y = initR.y + (Math.sin(elapsedTime * 14) * 0.38 * waveEnvelope);
+
+            // Left arm subtle balancing lean
+            joints.leftArm.rotation.x = initL.x - (0.15 * waveEnvelope);
+            joints.leftArm.rotation.z = initL.z - (0.1 * waveEnvelope);
+          } else if (currentStatus === 'happy') {
+            // Excited celebratory double arm wave
+            joints.leftArm.rotation.x = initL.x - 0.55 + Math.sin(elapsedTime * 9) * 0.25;
+            joints.rightArm.rotation.x = initR.x - 0.55 + Math.cos(elapsedTime * 9) * 0.25;
+            joints.leftArm.rotation.z = initL.z - 0.22;
+            joints.rightArm.rotation.z = initR.z + 0.22;
+            joints.rightArm.rotation.y = initR.y + Math.sin(elapsedTime * 12) * 0.2;
           } else if (currentStatus === 'thinking') {
             // Pondering pose: right arm raises toward chin
-            joints.rightArm.rotation.x = initR.x - 0.55 + Math.sin(elapsedTime * 3) * 0.04;
+            joints.rightArm.rotation.x = initR.x - 0.62 + Math.sin(elapsedTime * 3) * 0.04;
+            joints.rightArm.rotation.y = initR.y + 0.18;
             joints.leftArm.rotation.x = initL.x + Math.sin(elapsedTime * 2) * 0.04;
           } else {
             // Idle gentle resting swing
@@ -837,6 +872,8 @@ export default function RobotAvatar({
             joints.rightArm.rotation.x = initR.x - Math.sin(elapsedTime * 1.8) * 0.06;
             joints.leftArm.rotation.z = initL.z;
             joints.rightArm.rotation.z = initR.z;
+            joints.rightArm.rotation.y = initR.y;
+            joints.leftArm.rotation.y = initL.y;
           }
         }
 
@@ -846,12 +883,12 @@ export default function RobotAvatar({
         }
         if (joints.neck && initialRotations.neck) {
           joints.neck.rotation.x = initialRotations.neck.x - mouse.y * 0.08 + Math.sin(elapsedTime * 1.2) * 0.015;
-          joints.neck.rotation.y = initialRotations.neck.y + mouse.x * 0.1;
+          joints.neck.rotation.y = initialRotations.neck.y - mouse.x * 0.1;
         }
 
         // 7. Wheels subtle roll with body motion
         if (joints.leftWheel && joints.rightWheel) {
-          const wheelRoll = (mouse.x * 0.04) + Math.sin(elapsedTime * 2) * 0.015;
+          const wheelRoll = (-mouse.x * 0.04) + Math.sin(elapsedTime * 2) * 0.015;
           joints.leftWheel.rotation.x += wheelRoll;
           joints.rightWheel.rotation.x += wheelRoll;
         }

@@ -358,20 +358,98 @@
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 18px;
+  padding: 14px 16px;
   border-right: 1px solid var(--island-card-border);
   background: rgba(0, 0, 0, 0.08);
+  gap: 8px;
 }
 
 .island-robot-stage {
   width: 100%;
-  height: 290px;
+  height: 230px;
   position: relative;
   border-radius: 20px;
   background: radial-gradient(circle at center, rgba(6, 182, 212, 0.09) 0%, transparent 72%);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Voice Answer Box beneath 3D Robot */
+.voice-answer-box {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--island-card-bg);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 120px;
+  overflow-y: auto;
+  transition: all 0.25s ease;
+}
+
+.voice-answer-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.voice-answer-badge-left {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: #38bdf8;
+  letter-spacing: 0.6px;
+}
+
+.voice-answer-close {
+  background: transparent;
+  border: none;
+  color: var(--island-text-muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.voice-answer-close:hover {
+  color: #f43f5e;
+  background: rgba(244, 63, 94, 0.15);
+}
+
+.voice-answer-text {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--island-text);
+  word-break: break-word;
+}
+
+.voice-answer-text .hearing-text {
+  color: #38bdf8;
+  font-weight: 500;
+}
+
+.voice-answer-text .thinking-text {
+  color: #c084fc;
+  font-weight: 500;
+  animation: pulse 1.5s infinite;
+}
+
+.voice-answer-text .idle-placeholder {
+  color: var(--island-text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  display: block;
 }
 
 /* Expression Bar */

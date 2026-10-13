@@ -232,32 +232,96 @@ export default function RobotAvatar({
     const proceduralGroup = new THREE.Group();
     headGroup.add(proceduralGroup);
 
-    // Auto-load Blender / Sketchfab .glb model if user places one at /models/aibo.glb
+    // Model state tracking for procedural multi-joint robotics rig
+    const modelState = {
+      isLoaded: false,
+      joints: {},
+      initialRotations: {},
+      initialPositions: {},
+      eyeMaterials: [],
+      antennaMaterials: []
+    };
+
+    // Auto-load Blender / Sketchfab .glb model
     const gltfLoader = new GLTFLoader();
     gltfLoader.load(
       '/models/aibo.glb',
       (gltf) => {
         const loaded = gltf.scene;
+
+        // Traverse and upgrade materials
         loaded.traverse((child) => {
           if (child.isMesh) {
             child.castShadow = true;
             child.receiveShadow = true;
             if (child.material) {
-              child.material.needsUpdate = true;
+              const mat = child.material;
+              mat.needsUpdate = true;
+              // Reactive glowing eyes
+              if (child.name.includes('Eyes') || mat.name === 'Eyes') {
+                mat.emissive = new THREE.Color(0x38bdf8);
+                mat.emissiveIntensity = 1.6;
+                modelState.eyeMaterials.push(mat);
+              }
+              // Reactive antenna indicator bulb
+              if (child.name.includes('light') || mat.name === 'light') {
+                mat.emissive = new THREE.Color(0x38bdf8);
+                mat.emissiveIntensity = 2.2;
+                modelState.antennaMaterials.push(mat);
+              }
+              // Pearlescent cyber chassis enhancement
+              if (mat.name === 'Head' || mat.name === 'chestMat' || mat.name === 'ForeArmMat') {
+                mat.metalness = 0.28;
+                mat.roughness = 0.22;
+              }
+              if (mat.name === 'Ears' || mat.name === 'Antenna' || mat.name === 'Neck') {
+                mat.metalness = 0.6;
+                mat.roughness = 0.32;
+              }
             }
           }
         });
+
+        // Map robot joints for procedural animation
+        const joints = {
+          head: loaded.getObjectByName('Head'),
+          antenna: loaded.getObjectByName('Antenna'),
+          antennaLight: loaded.getObjectByName('Antenna_light_0'),
+          ears: loaded.getObjectByName('Head_Ears_0'),
+          eyes: loaded.getObjectByName('Head_Eyes_0'),
+          neck: loaded.getObjectByName('Neck'),
+          chest: loaded.getObjectByName('Chest'),
+          midSpine: loaded.getObjectByName('MidSpine'),
+          hips: loaded.getObjectByName('Hips'),
+          leftArm: loaded.getObjectByName('LeftArm'),
+          rightArm: loaded.getObjectByName('RightArm'),
+          leftWheel: loaded.getObjectByName('LeftWheel'),
+          rightWheel: loaded.getObjectByName('RightWheel')
+        };
+        modelState.joints = joints;
+
+        for (const [key, obj] of Object.entries(joints)) {
+          if (obj) {
+            modelState.initialRotations[key] = obj.rotation.clone();
+            modelState.initialPositions[key] = obj.position.clone();
+          }
+        }
+
+        // Frame and scale cleanly inside viewport
         const box = new THREE.Box3().setFromObject(loaded);
         const size = box.getSize(new THREE.Vector3());
         const center = box.getCenter(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
         if (maxDim > 0) {
-          const s = (compact ? 2.2 : 2.7) / maxDim;
+          const s = (compact ? 2.5 : 2.9) / maxDim;
           loaded.scale.setScalar(s);
-          loaded.position.set(-center.x * s, -center.y * s, -center.z * s);
+          const yAdjust = compact ? -(size.y * s * 0.14) : 0;
+          loaded.position.set(-center.x * s, -center.y * s + yAdjust, -center.z * s);
         }
+
         proceduralGroup.visible = false;
-        headGroup.add(loaded);
+        rootGroup.add(loaded);
+        modelState.isLoaded = true;
       },
       undefined,
       () => {
@@ -687,102 +751,224 @@ export default function RobotAvatar({
       mouse.x += (mouse.targetX - mouse.x) * 0.055;
       mouse.y += (mouse.targetY - mouse.y) * 0.055;
 
-      // 1. Natural Gentle Hovering
-      const hoverSpeed = currentStatus === 'thinking' ? 2.8 : 1.5;
-      const hoverAmp = compact ? 0.03 : 0.07;
-      rootGroup.position.y = Math.sin(elapsedTime * hoverSpeed) * hoverAmp;
+      if (modelState.isLoaded) {
+        const { joints, initialRotations, initialPositions, eyeMaterials, antennaMaterials } = modelState;
 
-      // 2. Head Tilts & Look-At Mouse
-      const maxRotX = 0.3;
-      const maxRotY = 0.48;
-      const headTilt = Math.sin(elapsedTime * 0.6) * 0.06;
-      headGroup.rotation.y = mouse.x * maxRotY + Math.sin(elapsedTime * 0.4) * 0.03;
-      headGroup.rotation.x = -mouse.y * maxRotX + Math.sin(elapsedTime * 0.6) * 0.025;
-      headGroup.rotation.z = -mouse.x * 0.12 + headTilt;
+        // 1. Gentle body hover & respiration
+        const hoverSpeed = currentStatus === 'thinking' ? 2.6 : currentStatus === 'speaking' ? 3.0 : 1.6;
+        const hoverAmp = compact ? 0.025 : 0.055;
+        rootGroup.position.y = Math.sin(elapsedTime * hoverSpeed) * hoverAmp;
+        rootGroup.position.x = Math.sin(elapsedTime * 0.8) * 0.01;
 
-      // 3. Eyeballs Smooth Gaze Look-At (Eyes track cursor within their sockets)
-      const maxEyeGazeX = 0.35;
-      const maxEyeGazeY = 0.25;
-      leftEyePivot.rotation.y = mouse.x * maxEyeGazeX;
-      leftEyePivot.rotation.x = -mouse.y * maxEyeGazeY;
-      rightEyePivot.rotation.y = mouse.x * maxEyeGazeX;
-      rightEyePivot.rotation.x = -mouse.y * maxEyeGazeY;
+        // 2. Head look-at cursor with expressive puppy tilts
+        if (joints.head && initialRotations.head) {
+          const init = initialRotations.head;
+          const headTilt = Math.sin(elapsedTime * 0.6) * 0.05;
+          let statusTiltX = 0;
+          let statusTiltY = 0;
+          let statusTiltZ = 0;
 
-      // 4. Realistic 3D Eyelid Blink Animation
-      blinkTime += delta;
-      if (blinkTime >= nextBlinkDuration) {
-        blinkPhase += delta * 14; // Quick smooth blink speed
-        if (blinkPhase >= Math.PI) {
-          // Blink finished
-          blinkPhase = 0;
-          blinkTime = 0;
-          nextBlinkDuration = 2.5 + Math.random() * 2.0; // Random natural interval
+          if (currentStatus === 'thinking') {
+            statusTiltX = -0.15; // Inquisitive look up
+            statusTiltZ = 0.12;  // Curious puppy head cock
+          } else if (currentStatus === 'happy') {
+            statusTiltX = Math.sin(elapsedTime * 8) * 0.08; // Happy rhythmic nodding
+            statusTiltZ = Math.sin(elapsedTime * 4) * 0.06;
+          } else if (currentStatus === 'speaking') {
+            statusTiltX = Math.sin(elapsedTime * 12) * 0.06; // Speech nodding
+          } else if (currentStatus === 'listening') {
+            statusTiltZ = -0.10; // Attentive ear cock
+            statusTiltX = 0.05;
+          }
+
+          joints.head.rotation.y = init.y + mouse.x * 0.45 + Math.sin(elapsedTime * 0.4) * 0.02 + statusTiltY;
+          joints.head.rotation.x = init.x - mouse.y * 0.35 + Math.sin(elapsedTime * 0.6) * 0.02 + statusTiltX;
+          joints.head.rotation.z = init.z - mouse.x * 0.12 + headTilt + statusTiltZ;
         }
-      }
 
-      // Sine wave blink: 0 (open: -PI/2) -> 1 (closed: 0) -> 0 (open: -PI/2)
-      let blinkAmount = Math.sin(blinkPhase);
-      if (blinkPhase === 0) blinkAmount = 0;
+        // 3. Antenna spring physics, waggle & bobble
+        if (joints.antenna && initialRotations.antenna) {
+          const init = initialRotations.antenna;
+          const waggleSpeed = currentStatus === 'thinking' ? 12 : currentStatus === 'happy' ? 10 : 3.5;
+          const waggleAmp = currentStatus === 'thinking' ? 0.22 : currentStatus === 'happy' ? 0.18 : 0.06;
+          const inertiaX = mouse.y * 0.15;
+          const inertiaZ = -mouse.x * 0.2;
+          joints.antenna.rotation.z = init.z + Math.sin(elapsedTime * waggleSpeed) * waggleAmp + inertiaZ;
+          joints.antenna.rotation.x = init.x + Math.cos(elapsedTime * (waggleSpeed * 0.8)) * (waggleAmp * 0.6) + inertiaX;
+        }
 
-      // Eyelid rotation interpolates from -Math.PI * 0.5 (open) to 0.08 (fully closed)
-      const openAngle = -Math.PI * 0.5;
-      const closedAngle = 0.08;
-      const currentEyelidAngle = openAngle + (closedAngle - openAngle) * blinkAmount;
+        // 4. Ears twitching & expressive reaction
+        if (joints.ears && initialRotations.ears) {
+          const init = initialRotations.ears;
+          let earWiggle = 0;
+          if (currentStatus === 'happy') {
+            earWiggle = Math.sin(elapsedTime * 14) * 0.12;
+          } else if (currentStatus === 'listening') {
+            earWiggle = 0.08 + Math.sin(elapsedTime * 5) * 0.03;
+          } else {
+            earWiggle = Math.sin(elapsedTime * 1.5) * 0.025;
+          }
+          joints.ears.rotation.x = init.x + earWiggle;
+          joints.ears.rotation.z = init.z + (mouse.x * 0.04);
+        }
 
-      leftEyelid.rotation.x = currentEyelidAngle;
-      rightEyelid.rotation.x = currentEyelidAngle;
+        // 5. Left and Right Arms gestures & cute paws
+        if (joints.leftArm && initialRotations.leftArm && joints.rightArm && initialRotations.rightArm) {
+          const initL = initialRotations.leftArm;
+          const initR = initialRotations.rightArm;
 
-      // 5. Floppy Ear Sway & Waggle
-      let earSwayL = 0;
-      let earSwayR = 0;
+          if (currentStatus === 'happy') {
+            // Excited celebratory arm waving
+            joints.leftArm.rotation.x = initL.x - 0.4 + Math.sin(elapsedTime * 8) * 0.25;
+            joints.rightArm.rotation.x = initR.x - 0.4 + Math.cos(elapsedTime * 8) * 0.25;
+            joints.leftArm.rotation.z = initL.z - 0.2;
+            joints.rightArm.rotation.z = initR.z + 0.2;
+          } else if (currentStatus === 'speaking') {
+            // Conversational arm gesturing
+            joints.leftArm.rotation.x = initL.x + Math.sin(elapsedTime * 6) * 0.18;
+            joints.rightArm.rotation.x = initR.x + Math.cos(elapsedTime * 5) * 0.15;
+          } else if (currentStatus === 'thinking') {
+            // Pondering pose: right arm raises toward chin
+            joints.rightArm.rotation.x = initR.x - 0.55 + Math.sin(elapsedTime * 3) * 0.04;
+            joints.leftArm.rotation.x = initL.x + Math.sin(elapsedTime * 2) * 0.04;
+          } else {
+            // Idle gentle resting swing
+            joints.leftArm.rotation.x = initL.x + Math.sin(elapsedTime * 1.8) * 0.06;
+            joints.rightArm.rotation.x = initR.x - Math.sin(elapsedTime * 1.8) * 0.06;
+            joints.leftArm.rotation.z = initL.z;
+            joints.rightArm.rotation.z = initR.z;
+          }
+        }
 
-      if (currentStatus === 'happy') {
-        earSwayL = Math.sin(elapsedTime * 10) * 0.22;
-        earSwayR = Math.cos(elapsedTime * 10) * 0.22;
-      } else if (currentStatus === 'listening') {
-        earSwayL = 0.16 + Math.sin(elapsedTime * 4) * 0.06;
-        earSwayR = 0.16 + Math.sin(elapsedTime * 4 + 0.4) * 0.06;
+        // 6. Chest, Spine & Neck natural breathing
+        if (joints.chest && initialPositions.chest) {
+          joints.chest.position.y = initialPositions.chest.y + Math.sin(elapsedTime * 2.2) * 0.003;
+        }
+        if (joints.neck && initialRotations.neck) {
+          joints.neck.rotation.x = initialRotations.neck.x - mouse.y * 0.08 + Math.sin(elapsedTime * 1.2) * 0.015;
+          joints.neck.rotation.y = initialRotations.neck.y + mouse.x * 0.1;
+        }
+
+        // 7. Wheels subtle roll with body motion
+        if (joints.leftWheel && joints.rightWheel) {
+          const wheelRoll = (mouse.x * 0.04) + Math.sin(elapsedTime * 2) * 0.015;
+          joints.leftWheel.rotation.x += wheelRoll;
+          joints.rightWheel.rotation.x += wheelRoll;
+        }
+
+        // 8. Dynamic OLED Eyes & Antenna Light Emissive Pulsing
+        let targetColor = new THREE.Color(0x38bdf8); // Cyan
+        let targetIntensity = 1.3;
+
+        if (currentStatus === 'thinking') {
+          targetColor = new THREE.Color(0xc084fc); // Electric Purple
+          targetIntensity = 1.7 + Math.sin(elapsedTime * 8) * 0.5;
+        } else if (currentStatus === 'happy') {
+          targetColor = new THREE.Color(0x34d399); // Emerald Green
+          targetIntensity = 1.9 + Math.sin(elapsedTime * 10) * 0.4;
+        } else if (currentStatus === 'listening') {
+          targetColor = new THREE.Color(0x38bdf8); // Pulsing Cyan
+          targetIntensity = 1.6 + Math.sin(elapsedTime * 6) * 0.5;
+        } else if (currentStatus === 'speaking') {
+          targetColor = new THREE.Color(0x60a5fa); // Bright Blue audio pulse
+          targetIntensity = 1.5 + Math.abs(Math.sin(elapsedTime * 12)) * 0.8;
+        }
+
+        for (const mat of eyeMaterials) {
+          mat.emissive.lerp(targetColor, 0.1);
+          mat.emissiveIntensity = targetIntensity;
+        }
+        for (const mat of antennaMaterials) {
+          mat.emissive.lerp(targetColor, 0.1);
+          mat.emissiveIntensity = targetIntensity * 1.4;
+        }
       } else {
-        earSwayL = Math.sin(elapsedTime * 1.5) * 0.06 - mouse.x * 0.08;
-        earSwayR = Math.sin(elapsedTime * 1.5 + 0.2) * 0.06 + mouse.x * 0.08;
-      }
+        // Fallback: 1. Natural Gentle Hovering
+        const hoverSpeed = currentStatus === 'thinking' ? 2.8 : 1.5;
+        const hoverAmp = compact ? 0.03 : 0.07;
+        rootGroup.position.y = Math.sin(elapsedTime * hoverSpeed) * hoverAmp;
 
-      leftEarPivot.rotation.x = -0.15 + earSwayL;
-      rightEarPivot.rotation.x = -0.15 + earSwayR;
+        // Fallback: 2. Head Tilts & Look-At Mouse
+        const maxRotX = 0.3;
+        const maxRotY = 0.48;
+        const headTilt = Math.sin(elapsedTime * 0.6) * 0.06;
+        headGroup.rotation.y = mouse.x * maxRotY + Math.sin(elapsedTime * 0.4) * 0.03;
+        headGroup.rotation.x = -mouse.y * maxRotX + Math.sin(elapsedTime * 0.6) * 0.025;
+        headGroup.rotation.z = -mouse.x * 0.12 + headTilt;
 
-      // 6. Articulated 3D Mouth, Lips & Tongue Movement (Speech Reactive & Panting)
-      let targetJawOpen = 0;
-      if (currentStatus === 'speaking') {
-        // Talking/barking speech articulation
-        targetJawOpen = Math.abs(Math.sin(elapsedTime * 14)) * 0.22 + Math.abs(Math.sin(elapsedTime * 9)) * 0.1;
-        tonguePivot.position.z = 0.35 + Math.sin(elapsedTime * 14) * 0.03;
-        tonguePivot.rotation.x = -0.08 + Math.sin(elapsedTime * 12) * 0.04;
-        tonguePivot.rotation.z = 0;
-      } else if (currentStatus === 'happy') {
-        // Happy panting puppy smile with tongue extended & lolling
-        targetJawOpen = 0.22 + Math.sin(elapsedTime * 6) * 0.04;
-        tonguePivot.position.z = 0.44 + Math.sin(elapsedTime * 8) * 0.04;
-        tonguePivot.rotation.x = -0.22 + Math.sin(elapsedTime * 8) * 0.06;
-        tonguePivot.rotation.z = Math.sin(elapsedTime * 10) * 0.08;
-      } else if (currentStatus === 'listening') {
-        // Attentive slightly parted jaw
-        targetJawOpen = 0.06;
-        tonguePivot.position.z = 0.31;
-        tonguePivot.rotation.set(0, 0, 0);
-      } else {
-        // Subtle natural breathing with occasional cute yawn
-        if (Math.sin(elapsedTime * 0.5) > 0.95) {
-          targetJawOpen = Math.sin(elapsedTime * 8) * 0.14;
-          tonguePivot.position.z = 0.39;
-          tonguePivot.rotation.x = -0.16;
-          tonguePivot.rotation.z = 0;
+        // Fallback: 3. Eyeballs Smooth Gaze Look-At
+        const maxEyeGazeX = 0.35;
+        const maxEyeGazeY = 0.25;
+        leftEyePivot.rotation.y = mouse.x * maxEyeGazeX;
+        leftEyePivot.rotation.x = -mouse.y * maxEyeGazeY;
+        rightEyePivot.rotation.y = mouse.x * maxEyeGazeX;
+        rightEyePivot.rotation.x = -mouse.y * maxEyeGazeY;
+
+        // Fallback: 4. Realistic 3D Eyelid Blink Animation
+        blinkTime += delta;
+        if (blinkTime >= nextBlinkDuration) {
+          blinkPhase += delta * 14;
+          if (blinkPhase >= Math.PI) {
+            blinkPhase = 0;
+            blinkTime = 0;
+            nextBlinkDuration = 2.5 + Math.random() * 2.0;
+          }
+        }
+
+        let blinkAmount = Math.sin(blinkPhase);
+        if (blinkPhase === 0) blinkAmount = 0;
+        const openAngle = -Math.PI * 0.5;
+        const closedAngle = 0.08;
+        const currentEyelidAngle = openAngle + (closedAngle - openAngle) * blinkAmount;
+        leftEyelid.rotation.x = currentEyelidAngle;
+        rightEyelid.rotation.x = currentEyelidAngle;
+
+        // Fallback: 5. Floppy Ear Sway & Waggle
+        let earSwayL = 0;
+        let earSwayR = 0;
+        if (currentStatus === 'happy') {
+          earSwayL = Math.sin(elapsedTime * 10) * 0.22;
+          earSwayR = Math.cos(elapsedTime * 10) * 0.22;
+        } else if (currentStatus === 'listening') {
+          earSwayL = 0.16 + Math.sin(elapsedTime * 4) * 0.06;
+          earSwayR = 0.16 + Math.sin(elapsedTime * 4 + 0.4) * 0.06;
         } else {
-          targetJawOpen = 0;
-          tonguePivot.position.z = 0.28;
-          tonguePivot.rotation.set(0, 0, 0);
+          earSwayL = Math.sin(elapsedTime * 1.5) * 0.06 - mouse.x * 0.08;
+          earSwayR = Math.sin(elapsedTime * 1.5 + 0.2) * 0.06 + mouse.x * 0.08;
         }
+        leftEarPivot.rotation.x = -0.15 + earSwayL;
+        rightEarPivot.rotation.x = -0.15 + earSwayR;
+
+        // Fallback: 6. Articulated 3D Mouth
+        let targetJawOpen = 0;
+        if (currentStatus === 'speaking') {
+          targetJawOpen = Math.abs(Math.sin(elapsedTime * 14)) * 0.22 + Math.abs(Math.sin(elapsedTime * 9)) * 0.1;
+          tonguePivot.position.z = 0.35 + Math.sin(elapsedTime * 14) * 0.03;
+          tonguePivot.rotation.x = -0.08 + Math.sin(elapsedTime * 12) * 0.04;
+          tonguePivot.rotation.z = 0;
+        } else if (currentStatus === 'happy') {
+          targetJawOpen = 0.22 + Math.sin(elapsedTime * 6) * 0.04;
+          tonguePivot.position.z = 0.44 + Math.sin(elapsedTime * 8) * 0.04;
+          tonguePivot.rotation.x = -0.22 + Math.sin(elapsedTime * 8) * 0.06;
+          tonguePivot.rotation.z = Math.sin(elapsedTime * 10) * 0.08;
+        } else if (currentStatus === 'listening') {
+          targetJawOpen = 0.06;
+          tonguePivot.position.z = 0.31;
+          tonguePivot.rotation.set(0, 0, 0);
+        } else {
+          if (Math.sin(elapsedTime * 0.5) > 0.95) {
+            targetJawOpen = Math.sin(elapsedTime * 8) * 0.14;
+            tonguePivot.position.z = 0.39;
+            tonguePivot.rotation.x = -0.16;
+            tonguePivot.rotation.z = 0;
+          } else {
+            targetJawOpen = 0;
+            tonguePivot.position.z = 0.28;
+            tonguePivot.rotation.set(0, 0, 0);
+          }
+        }
+        jawPivot.rotation.x = targetJawOpen;
       }
-      jawPivot.rotation.x = targetJawOpen;
 
       // 7. Gyroscopic Rings
       let ringSpeed = 0.015;

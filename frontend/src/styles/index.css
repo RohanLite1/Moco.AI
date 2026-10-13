@@ -2,6 +2,7 @@
 @import './dynamicIsland.css';
 @import './pomodoro.css';
 @import './tasks.css';
+@import './music.css';
 
 :root {
   --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;

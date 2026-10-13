@@ -2,57 +2,176 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   Play,
   Pause,
+  SkipBack,
+  SkipForward,
   Volume2,
   VolumeX,
   Radio,
-  Disc3,
-  Sparkles,
   Headphones,
-  Sliders
+  Sparkles,
+  Zap,
+  CloudRain,
+  Moon,
+  Brain
 } from 'lucide-react';
+import '../styles/music.css';
+
+const SOUND_LIBRARY = [
+  // COLUMN 1: FOCUS 🧠
+  {
+    category: 'focus',
+    categoryName: 'Focus 🧠',
+    icon: Brain,
+    tracks: [
+      {
+        id: 'alpha-432',
+        title: 'Deep Alpha',
+        desc: '432Hz Binaural Beat',
+        type: 'binaural',
+        freqs: [216, 432, 440],
+        badge: 'Focus'
+      },
+      {
+        id: 'cyber-synth',
+        title: 'Cyber Synth',
+        desc: 'Neon Focus Chords',
+        type: 'synth',
+        freqs: [130.81, 164.81, 196.0, 246.94],
+        badge: 'Synth'
+      },
+      {
+        id: 'lofi-study',
+        title: 'Lo-Fi Chill',
+        desc: 'Midnight Study Haze',
+        type: 'lofi',
+        freqs: [146.83, 174.61, 220.0, 261.63, 329.63],
+        badge: 'Lo-Fi'
+      }
+    ]
+  },
+  // COLUMN 2: MOTIVATION ⚡
+  {
+    category: 'motivation',
+    categoryName: 'Motivation ⚡',
+    icon: Zap,
+    tracks: [
+      {
+        id: 'peak-drive',
+        title: 'Peak Drive',
+        desc: 'Gamma Energy Pulse',
+        type: 'gamma',
+        freqs: [200, 240, 480],
+        badge: 'Energy'
+      },
+      {
+        id: 'solar-rise',
+        title: 'Solar Rise',
+        desc: 'Bright Major Chords',
+        type: 'synth',
+        freqs: [174.61, 220.0, 261.63, 349.23],
+        badge: 'Uplift'
+      },
+      {
+        id: 'electric-zen',
+        title: 'Electric Flow',
+        desc: 'Harmonic Arpeggio',
+        type: 'synth',
+        freqs: [220, 277.18, 329.63, 440],
+        badge: 'Clarity'
+      }
+    ]
+  },
+  // COLUMN 3: RELAX 🌧️
+  {
+    category: 'relax',
+    categoryName: 'Relax 🌧️',
+    icon: CloudRain,
+    tracks: [
+      {
+        id: 'rain-shower',
+        title: 'Rain Shower',
+        desc: 'Warm Filtered Noise',
+        type: 'noise-rain',
+        freqs: [380, 800],
+        badge: 'Rain'
+      },
+      {
+        id: 'tibetan-bowl',
+        title: 'Zen Bowl',
+        desc: 'Singing Harmonics',
+        type: 'zen',
+        freqs: [108, 216, 324, 432],
+        badge: 'Zen'
+      },
+      {
+        id: 'forest-stream',
+        title: 'Forest Stream',
+        desc: 'Gentle Flowing Water',
+        type: 'noise-water',
+        freqs: [600, 1100],
+        badge: 'Nature'
+      }
+    ]
+  },
+  // COLUMN 4: REST 🌙
+  {
+    category: 'rest',
+    categoryName: 'Rest 🌙',
+    icon: Moon,
+    tracks: [
+      {
+        id: 'theta-rest',
+        title: 'Theta Rest',
+        desc: '4Hz Deep Sleep Tone',
+        type: 'binaural',
+        freqs: [100, 104, 208],
+        badge: 'Theta'
+      },
+      {
+        id: 'cosmic-drift',
+        title: 'Cosmic Drift',
+        desc: 'Starlight Ambient Pad',
+        type: 'synth',
+        freqs: [98.0, 146.83, 196.0, 293.66],
+        badge: 'Ambient'
+      },
+      {
+        id: 'warm-sub',
+        title: 'Warm Sub',
+        desc: 'Analog Low Drone',
+        type: 'synth',
+        freqs: [55.0, 110.0, 165.0],
+        badge: 'Drone'
+      }
+    ]
+  }
+];
+
+// Flat list for Prev/Next navigation
+const ALL_TRACKS = SOUND_LIBRARY.flatMap((col) =>
+  col.tracks.map((t) => ({ ...t, categoryName: col.categoryName }))
+);
 
 export default function MusicWidget() {
+  const [currentTrack, setCurrentTrack] = useState(ALL_TRACKS[0]);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [channel, setChannel] = useState('synthwave'); // synthwave | lofi | alpha
-  const [volume, setVolume] = useState(0.4);
+  const [volume, setVolume] = useState(0.5);
+
   const audioCtxRef = useRef(null);
   const masterGainRef = useRef(null);
-  const oscRef = useRef([]);
+  const nodesRef = useRef([]);
 
-  const channels = [
-    {
-      id: 'synthwave',
-      title: 'Neon Horizon',
-      genre: 'Cyber Synthwave',
-      freqs: [130.81, 164.81, 196.00, 246.94], // C3, E3, G3, B3 (Cmaj7 chord)
-      color: '#06b6d4'
-    },
-    {
-      id: 'lofi',
-      title: 'Midnight Rain',
-      genre: 'Lo-Fi Chill Chords',
-      freqs: [146.83, 174.61, 220.00, 261.63], // D3, F3, A3, C4 (Dm7 chord)
-      color: '#a855f7'
-    },
-    {
-      id: 'alpha',
-      title: 'Alpha Wave 432Hz',
-      genre: 'Binaural Focus Drone',
-      freqs: [108.0, 216.0, 432.0], // 432Hz subharmonic alignment
-      color: '#10b981'
-    }
-  ];
+  const currentIdx = ALL_TRACKS.findIndex((t) => t.id === currentTrack.id);
 
-  const currentChannel = channels.find(c => c.id === channel) || channels[0];
-
+  // Stop generative audio cleanly
   const stopAudio = () => {
-    oscRef.current.forEach(osc => {
+    nodesRef.current.forEach((node) => {
       try {
-        osc.stop();
-        osc.disconnect();
+        if (node.stop) node.stop();
+        node.disconnect();
       } catch (e) {}
     });
-    oscRef.current = [];
+    nodesRef.current = [];
     if (audioCtxRef.current) {
       audioCtxRef.current.close().catch(() => {});
       audioCtxRef.current = null;
@@ -60,7 +179,8 @@ export default function MusicWidget() {
     setIsPlaying(false);
   };
 
-  const startAudio = (channelObj) => {
+  // Start generative audio engine for selected track
+  const startAudio = (track) => {
     stopAudio();
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -68,33 +188,63 @@ export default function MusicWidget() {
       audioCtxRef.current = ctx;
 
       const masterGain = ctx.createGain();
-      masterGain.gain.setValueAtTime(volume * 0.12, ctx.currentTime);
+      masterGain.gain.setValueAtTime(volume * 0.14, ctx.currentTime);
       masterGain.connect(ctx.destination);
       masterGainRef.current = masterGain;
 
-      const activeFreqs = channelObj.freqs;
-      const oscillators = activeFreqs.map((f, idx) => {
-        const osc = ctx.createOscillator();
-        const subGain = ctx.createGain();
-        subGain.gain.value = 0.25;
+      const activeNodes = [];
 
-        // Waveform shape
-        osc.type = channelObj.id === 'synthwave' ? (idx % 2 === 0 ? 'triangle' : 'sine') : 'sine';
-        osc.frequency.setValueAtTime(f, ctx.currentTime);
+      if (track.type.startsWith('noise')) {
+        // Noise buffer generator for Rain / Stream
+        const bufferSize = ctx.sampleRate * 2;
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        let lastOut = 0.0;
 
-        // Gentle stereo panning or detune
-        osc.detune.setValueAtTime((idx - 1) * 4, ctx.currentTime);
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          // Pink noise filter
+          output[i] = (lastOut + 0.02 * white) / 1.02;
+          lastOut = output[i];
+          output[i] *= 3.5;
+        }
 
-        osc.connect(subGain);
-        subGain.connect(masterGain);
-        osc.start();
-        return osc;
-      });
+        const whiteNoise = ctx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+        whiteNoise.loop = true;
 
-      oscRef.current = oscillators;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(track.freqs[0], ctx.currentTime);
+
+        whiteNoise.connect(filter);
+        filter.connect(masterGain);
+        whiteNoise.start();
+
+        activeNodes.push(whiteNoise, filter);
+      } else {
+        // Multi-oscillator synthesis (Harmonics, Binaural, Synthwave pads)
+        track.freqs.forEach((f, idx) => {
+          const osc = ctx.createOscillator();
+          const subGain = ctx.createGain();
+          subGain.gain.value = 0.22 / Math.sqrt(track.freqs.length);
+
+          osc.type = idx % 2 === 0 ? 'sine' : 'triangle';
+          osc.frequency.setValueAtTime(f, ctx.currentTime);
+          osc.detune.setValueAtTime((idx - 1) * 3, ctx.currentTime);
+
+          osc.connect(subGain);
+          subGain.connect(masterGain);
+          osc.start();
+
+          activeNodes.push(osc, subGain);
+        });
+      }
+
+      nodesRef.current = activeNodes;
       setIsPlaying(true);
-    } catch (e) {
-      console.error('Audio initialization notice:', e);
+    } catch (err) {
+      console.warn('Audio synthesis notice:', err);
     }
   };
 
@@ -102,22 +252,35 @@ export default function MusicWidget() {
     if (isPlaying) {
       stopAudio();
     } else {
-      startAudio(currentChannel);
+      startAudio(currentTrack);
     }
   };
 
-  const handleChannelChange = (newChan) => {
-    setChannel(newChan.id);
+  const selectTrack = (track) => {
+    setCurrentTrack(track);
     if (isPlaying) {
-      startAudio(newChan);
+      startAudio(track);
     }
+  };
+
+  const handleNext = () => {
+    const nextIdx = (currentIdx + 1) % ALL_TRACKS.length;
+    selectTrack(ALL_TRACKS[nextIdx]);
+  };
+
+  const handlePrev = () => {
+    const prevIdx = (currentIdx - 1 + ALL_TRACKS.length) % ALL_TRACKS.length;
+    selectTrack(ALL_TRACKS[prevIdx]);
   };
 
   const handleVolumeChange = (e) => {
     const newVol = parseFloat(e.target.value);
     setVolume(newVol);
     if (masterGainRef.current && audioCtxRef.current) {
-      masterGainRef.current.gain.setValueAtTime(newVol * 0.12, audioCtxRef.current.currentTime);
+      masterGainRef.current.gain.setValueAtTime(
+        newVol * 0.14,
+        audioCtxRef.current.currentTime
+      );
     }
   };
 
@@ -126,134 +289,164 @@ export default function MusicWidget() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-between h-full bg-slate-900/70 rounded-2xl border border-white/10 p-4 backdrop-blur-2xl shadow-xl text-center overflow-hidden">
-      {/* Top Header */}
-      <div className="flex items-center justify-between w-full pb-2 border-b border-white/10">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300">
-            <Radio size={13} />
-          </div>
-          <span className="text-xs font-bold text-white tracking-wide">
-            NEURAL AMBIENCE
-          </span>
-        </div>
-        <div className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/5 text-slate-300 border border-white/10">
-          Synthesizer Engine
-        </div>
-      </div>
-
-      {/* Main Display: Spinning Cyber Vinyl Disc & Live Waves */}
-      <div className="flex items-center justify-center gap-6 my-2 w-full">
-        {/* Animated Spinning Vinyl Disc */}
-        <div className="relative flex items-center justify-center w-28 h-28 rounded-full bg-slate-950 border-2 border-white/20 shadow-2xl">
-          {/* Groove Rings */}
-          <div
-            className={`w-full h-full rounded-full border border-dashed border-white/15 flex items-center justify-center ${
-              isPlaying ? 'animate-spin' : ''
-            }`}
-            style={{ animationDuration: '4s' }}
-          >
-            <div className="w-20 h-20 rounded-full border border-white/10 flex items-center justify-center">
-              <div
-                className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center"
-                style={{
-                  backgroundColor: `${currentChannel.color}25`,
-                  boxShadow: isPlaying ? `0 0 14px ${currentChannel.color}` : 'none'
-                }}
-              >
-                <Disc3
-                  size={20}
-                  style={{ color: currentChannel.color }}
-                  className={isPlaying ? 'animate-pulse' : ''}
-                />
-              </div>
+    <div className="music-container">
+      <div className="music-card">
+        {/* =================================================================== */}
+        {/* 1. TOP HEADER                                                       */}
+        {/* =================================================================== */}
+        <div className="music-header">
+          <div className="music-header-left">
+            <div className="music-icon-badge">
+              <Headphones size={18} strokeWidth={2.2} />
+            </div>
+            <div>
+              <h2 className="music-header-title">Neural Ambience</h2>
+              <p className="music-header-sub">Generative Soundscape Engine</p>
             </div>
           </div>
 
-          {/* Needle / Laser Sensor Indicator */}
-          <div
-            className="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white/80"
-            style={{
-              backgroundColor: isPlaying ? '#06b6d4' : '#64748b',
-              boxShadow: isPlaying ? '0 0 8px #06b6d4' : 'none'
-            }}
-          />
-        </div>
-
-        {/* Track Info & Dynamic 16-Bar Audio Waveform */}
-        <div className="flex flex-col items-start justify-center text-left">
-          <div className="text-sm font-bold text-white tracking-wide">
-            {currentChannel.title}
-          </div>
-          <div className="text-[11px] font-mono text-cyan-400 mb-2">
-            {currentChannel.genre}
-          </div>
-
-          {/* Real-Time Live Equalizer Bars */}
-          <div className="flex items-end gap-1 h-8 px-2 py-1 bg-black/40 rounded-lg border border-white/10">
-            {[14, 24, 18, 28, 12, 22, 16, 26, 10, 20, 14, 25, 18, 22].map((h, idx) => (
-              <div
-                key={idx}
-                className="w-1 rounded-full transition-all duration-200"
-                style={{
-                  height: isPlaying ? `${Math.max(4, (h * (volume + 0.3)))}px` : '4px',
-                  backgroundColor: currentChannel.color,
-                  opacity: isPlaying ? 0.9 : 0.25,
-                  boxShadow: isPlaying ? `0 0 6px ${currentChannel.color}` : 'none'
-                }}
-              />
-            ))}
+          <div className="music-live-badge">
+            {isPlaying ? (
+              <>
+                <span className="music-pulse-dot" />
+                <span>NOW PLAYING</span>
+              </>
+            ) : (
+              <span>READY</span>
+            )}
           </div>
         </div>
-      </div>
 
-      {/* Station Selector */}
-      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/40 border border-white/10 w-full max-w-[340px]">
-        {channels.map((ch) => (
-          <button
-            key={ch.id}
-            onClick={() => handleChannelChange(ch)}
-            className={`flex-1 py-1.5 rounded-lg text-[10px] font-mono font-semibold transition ${
-              channel === ch.id
-                ? 'bg-white/15 text-white shadow-sm border border-white/20'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            {ch.title.split(' ')[0]}
-          </button>
-        ))}
-      </div>
+        {/* =================================================================== */}
+        {/* 2. AUDIO PLAYER DECK                                                */}
+        {/* Transport Controls Row on top, then Title & Details below           */}
+        {/* =================================================================== */}
+        <div className="music-player-deck">
+          {/* Controls Row: Previous, Play/Pause, Next */}
+          <div className="music-transport-row">
+            {/* Previous Track Button */}
+            <button
+              type="button"
+              onClick={handlePrev}
+              className="music-btn-nav"
+              title="Previous Soundscape"
+            >
+              <SkipBack size={17} strokeWidth={2.2} />
+            </button>
 
-      {/* Bottom Controls: Play/Pause and Volume Slider */}
-      <div className="flex items-center justify-between w-full max-w-[340px] mt-2">
-        <button
-          onClick={togglePlay}
-          className={`px-5 py-2 rounded-xl font-bold font-mono text-xs flex items-center gap-2 transition cursor-pointer shadow-lg ${
-            isPlaying
-              ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40'
-              : 'bg-cyan-500 hover:bg-cyan-400 text-black shadow-cyan-500/25'
-          }`}
-        >
-          {isPlaying ? <Pause size={14} /> : <Play size={14} fill="currentColor" />}
-          <span>{isPlaying ? 'Pause Audio' : 'Start Soundscape'}</span>
-        </button>
+            {/* Prominent Play / Pause Button */}
+            <button
+              type="button"
+              onClick={togglePlay}
+              className={`music-btn-play ${isPlaying ? 'playing' : ''}`}
+            >
+              {isPlaying ? (
+                <>
+                  <Pause size={16} strokeWidth={2.4} />
+                  <span>Pause Audio</span>
+                </>
+              ) : (
+                <>
+                  <Play size={16} fill="currentColor" strokeWidth={0} />
+                  <span>Start Soundscape</span>
+                </>
+              )}
+            </button>
 
-        {/* Volume Scrubber */}
-        <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-xl border border-white/10">
-          {volume === 0 ? (
-            <VolumeX size={14} className="text-slate-500" />
-          ) : (
-            <Volume2 size={14} className="text-cyan-400" />
-          )}
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            value={volume}
-            onChange={handleVolumeChange}
-            className="w-20 accent-cyan-400 cursor-pointer h-1"
-          />
+            {/* Next Track Button */}
+            <button
+              type="button"
+              onClick={handleNext}
+              className="music-btn-nav"
+              title="Next Soundscape"
+            >
+              <SkipForward size={17} strokeWidth={2.2} />
+            </button>
+          </div>
+
+          {/* Below Controls: Track Name & Title Things */}
+          <div className="music-track-info">
+            <div className="music-track-title">{currentTrack.title}</div>
+            <div className="music-track-sub">
+              {currentTrack.categoryName} • {currentTrack.desc}
+            </div>
+          </div>
+
+          {/* Real-Time Bouncing Equalizer Bars */}
+          <div className="music-equalizer">
+            {[10, 20, 14, 26, 12, 22, 16, 24, 8, 18, 14, 25, 18, 22, 12, 16].map(
+              (h, idx) => (
+                <div
+                  key={idx}
+                  className="music-equalizer-bar"
+                  style={{
+                    height: isPlaying
+                      ? `${Math.max(4, h * (volume + 0.35))}px`
+                      : '4px',
+                    opacity: isPlaying ? 0.95 : 0.3
+                  }}
+                />
+              )
+            )}
+          </div>
+
+          {/* Volume Slider Scrubber */}
+          <div className="music-volume-row">
+            <span className="music-volume-icon">
+              {volume === 0 ? <VolumeX size={14} /> : <Volume2 size={14} />}
+            </span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={volume}
+              onChange={handleVolumeChange}
+              className="music-volume-slider"
+              title="Volume Control"
+            />
+          </div>
+        </div>
+
+        {/* =================================================================== */}
+        {/* 3. SOUNDSCAPE COLUMNS (FOCUS, MOTIVATION, RELAX, REST)              */}
+        {/* =================================================================== */}
+        <div className="music-section-title">
+          <Sparkles size={13} color="#0891b2" />
+          <span>Soundscape Library</span>
+        </div>
+
+        <div className="music-columns-grid">
+          {SOUND_LIBRARY.map((col) => {
+            const Icon = col.icon;
+            return (
+              <div key={col.category} className="music-column">
+                <div className="music-column-header">
+                  <Icon size={12} strokeWidth={2.2} color="#0891b2" />
+                  <span>{col.categoryName}</span>
+                </div>
+
+                {col.tracks.map((track) => {
+                  const isSelected = currentTrack.id === track.id;
+                  return (
+                    <button
+                      key={track.id}
+                      type="button"
+                      onClick={() => selectTrack(track)}
+                      className={`music-sound-btn ${isSelected ? 'active' : ''}`}
+                    >
+                      <div className="music-sound-btn-title">
+                        {track.title}
+                      </div>
+                      <div className="music-sound-btn-desc">
+                        {track.badge}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

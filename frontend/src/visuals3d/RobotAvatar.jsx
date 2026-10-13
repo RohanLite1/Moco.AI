@@ -107,7 +107,7 @@ function createAiboEyeCanvas(status = 'idle', lookX = 0, lookY = 0) {
   return canvas;
 }
 
-// 2. Procedural Pearlescent Chassis Texture with Dalmatian Cyber-Spots
+// 2. Procedural Pearlescent Ceramic Chassis Texture (Pristine Sony Aibo White)
 function createChassisTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
@@ -118,45 +118,19 @@ function createChassisTexture() {
   ctx.fillStyle = '#f8fafc';
   ctx.fillRect(0, 0, 512, 512);
 
-  // Micro-speckles
-  for (let i = 0; i < 3500; i++) {
+  // Micro-pearlescent metallic flake shimmer
+  for (let i = 0; i < 4000; i++) {
     const x = Math.random() * 512;
     const y = Math.random() * 512;
-    const alpha = Math.random() * 0.05;
-    ctx.fillStyle = `rgba(203, 213, 225, ${alpha})`;
+    const alpha = Math.random() * 0.035;
+    ctx.fillStyle = `rgba(226, 232, 240, ${alpha})`;
     ctx.fillRect(x, y, 1.5, 1.5);
   }
-
-  // --- DISTINCTIVE DALMATIAN / PUPPY SPOTS ON SKIN ---
-  const spots = [
-    { x: 155, y: 175, rx: 72, ry: 58, rot: 0.25 }, // Left eye / temple patch
-    { x: 335, y: 110, rx: 55, ry: 48, rot: -0.2 },  // Top crown spot
-    { x: 235, y: 85,  rx: 40, ry: 32, rot: 0.1 },   // Forehead central spot
-    { x: 390, y: 310, rx: 62, ry: 52, rot: 0.35 }, // Right rear skull spot
-    { x: 125, y: 350, rx: 48, ry: 42, rot: -0.15 },// Left rear skull spot
-    { x: 260, y: 415, rx: 42, ry: 36, rot: 0.1 },   // Lower neck spot
-    { x: 420, y: 175, rx: 46, ry: 38, rot: -0.28 }, // Right temple spot
-    { x: 185, y: 275, rx: 34, ry: 28, rot: 0.18 }   // Cheek flank spot
-  ];
-
-  spots.forEach((s) => {
-    ctx.save();
-    ctx.translate(s.x, s.y);
-    ctx.rotate(s.rot);
-
-    // Organic spot fill (Dark chocolate / charcoal)
-    ctx.fillStyle = '#3a2b23';
-    ctx.beginPath();
-    ctx.ellipse(0, 0, s.rx, s.ry, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
-  });
 
   return new THREE.CanvasTexture(canvas);
 }
 
-// 3. Procedural Champagne Ceramic Faceplate Texture
+// 3. Procedural Champagne Ceramic Faceplate Texture (Signature Aibo Warm Mask)
 function createFaceplateTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
@@ -166,29 +140,19 @@ function createFaceplateTexture() {
   ctx.fillStyle = '#ded8d0';
   ctx.fillRect(0, 0, 512, 512);
 
-  // Soft ceramic noise
-  for (let i = 0; i < 2500; i++) {
+  // Soft satin ceramic micro-sheen
+  for (let i = 0; i < 3000; i++) {
     const x = Math.random() * 512;
     const y = Math.random() * 512;
-    const alpha = Math.random() * 0.04;
+    const alpha = Math.random() * 0.035;
     ctx.fillStyle = `rgba(180, 165, 150, ${alpha})`;
     ctx.fillRect(x, y, 2, 2);
   }
 
-  // Soft Dalmatian Eye Patch Spot over right brow on faceplate
-  ctx.save();
-  ctx.translate(340, 205);
-  ctx.rotate(0.28);
-  ctx.fillStyle = '#3a2b23';
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 48, 38, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  // Subtle contour highlight
+  // Subtle natural light gradient
   const grad = ctx.createLinearGradient(0, 0, 0, 512);
-  grad.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
-  grad.addColorStop(1, 'rgba(0, 0, 0, 0.08)');
+  grad.addColorStop(0, 'rgba(255, 255, 255, 0.12)');
+  grad.addColorStop(1, 'rgba(0, 0, 0, 0.06)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 512, 512);
 
@@ -334,126 +298,48 @@ export default function RobotAvatar({
     const faceMesh = new THREE.Mesh(faceGeo, beigeFaceMat);
     headGroup.add(faceMesh);
 
-    // Muzzle / Snout
-    const snoutGeo = new THREE.SphereGeometry(0.58, 32, 32);
-    snoutGeo.scale(1.22, 0.88, 1.25);
-    snoutGeo.translate(0, -0.22, 0.82);
+    // -------------------------------------------------------------------------
+    // 2. SONY AIBO SNOUT & CAMERA BUTTON NOSE (OFFICIAL REPLICA)
+    // -------------------------------------------------------------------------
+    // Seamless Champagne Muzzle / Snout
+    const snoutGeo = new THREE.SphereGeometry(0.60, 36, 36);
+    snoutGeo.scale(1.15, 0.84, 1.28);
+    snoutGeo.translate(0, -0.19, 0.84);
     const snoutMesh = new THREE.Mesh(snoutGeo, beigeFaceMat);
     headGroup.add(snoutMesh);
 
-
-    // -------------------------------------------------------------------------
-    // 2. CANINE SNOUT, WHISKER PADS & NOSE SCULPTURE (MATCHING REFERENCE IMAGE)
-    // -------------------------------------------------------------------------
-    // Dual Rounded Whisker Pad Pillows (Left & Right cheeks flanking the nose)
-    const whiskerPadGeo = new THREE.SphereGeometry(0.28, 24, 24);
-    whiskerPadGeo.scale(1.22, 0.90, 1.08);
-
-    const leftPadMesh = new THREE.Mesh(whiskerPadGeo, beigeFaceMat);
-    leftPadMesh.position.set(-0.20, -0.19, 1.18);
-    leftPadMesh.rotation.set(-0.06, 0.14, -0.04);
-    headGroup.add(leftPadMesh);
-
-    const rightPadMesh = new THREE.Mesh(whiskerPadGeo, beigeFaceMat);
-    rightPadMesh.position.set(0.20, -0.19, 1.18);
-    rightPadMesh.rotation.set(-0.06, -0.14, 0.04);
-    headGroup.add(rightPadMesh);
-
-    // Sculpted Canine Button Nose
+    // Sony Aibo Sensor Button Nose
     const noseGeo = new THREE.SphereGeometry(0.18, 24, 24);
-    noseGeo.scale(1.25, 0.88, 0.95);
+    noseGeo.scale(1.22, 0.88, 0.92);
     noseGeo.translate(0, -0.05, 1.38);
     const noseMesh = new THREE.Mesh(noseGeo, darkTrimMat);
     headGroup.add(noseMesh);
 
-    // Canine Nostril Cavities (Left and Right)
-    const nostrilGeo = new THREE.SphereGeometry(0.042, 16, 16);
-    nostrilGeo.scale(1.18, 0.72, 0.82);
-    const nostrilMat = new THREE.MeshBasicMaterial({ color: 0x020617 });
+    // Front Camera Lens Element inside Aibo's nose
+    const lensRimGeo = new THREE.TorusGeometry(0.045, 0.012, 16, 24);
+    const lensRim = new THREE.Mesh(lensRimGeo, darkTrimMat);
+    lensRim.position.set(0, -0.05, 1.48);
+    headGroup.add(lensRim);
 
-    const leftNostril = new THREE.Mesh(nostrilGeo, nostrilMat);
-    leftNostril.position.set(-0.07, -0.075, 1.48);
-    headGroup.add(leftNostril);
-
-    const rightNostril = new THREE.Mesh(nostrilGeo, nostrilMat);
-    rightNostril.position.set(0.07, -0.075, 1.48);
-    headGroup.add(rightNostril);
-
-    // -------------------------------------------------------------------------
-    // 3. WHISKER CIRCLES & SIDEWAYS WHISKER HAIRS (ON BOTH SIDES OF NOSE)
-    // -------------------------------------------------------------------------
-    // Follicle Pores / Dots on both cheek circles
-    const follicleDotGeo = new THREE.SphereGeometry(0.024, 12, 12);
-    follicleDotGeo.scale(1.0, 1.0, 0.45);
-
-    // 4 Distinct Follicle Dots & Whisker Roots inside each cheek circle
-    const whiskerConfigs = [
-      {
-        // Top whisker
-        pos: { x: -0.24, y: -0.15, z: 1.34 },
-        length: 0.46,
-        rotZ: Math.PI * 0.5 - 0.08,
-        rotY: -0.25
-      },
-      {
-        // Mid-outer main whisker
-        pos: { x: -0.30, y: -0.19, z: 1.30 },
-        length: 0.56,
-        rotZ: Math.PI * 0.5 + 0.05,
-        rotY: -0.20
-      },
-      {
-        // Mid-inner whisker
-        pos: { x: -0.20, y: -0.21, z: 1.35 },
-        length: 0.42,
-        rotZ: Math.PI * 0.5 + 0.14,
-        rotY: -0.32
-      },
-      {
-        // Lower whisker
-        pos: { x: -0.28, y: -0.24, z: 1.28 },
-        length: 0.50,
-        rotZ: Math.PI * 0.5 + 0.24,
-        rotY: -0.15
-      }
-    ];
-
-    const whiskerHairMat = new THREE.MeshStandardMaterial({
-      color: 0x334155,
-      metalness: 0.4,
-      roughness: 0.3
+    const lensGlassGeo = new THREE.SphereGeometry(0.038, 16, 16);
+    lensGlassGeo.scale(1, 1, 0.35);
+    const lensGlassMat = new THREE.MeshStandardMaterial({
+      color: 0x0284c7,
+      roughness: 0.1,
+      metalness: 0.8,
+      emissive: new THREE.Color(0x0369a1),
+      emissiveIntensity: 0.4
     });
+    const lensGlass = new THREE.Mesh(lensGlassGeo, lensGlassMat);
+    lensGlass.position.set(0, -0.05, 1.485);
+    headGroup.add(lensGlass);
 
-    const whiskerHairGeos = [];
-
-    whiskerConfigs.forEach(({ pos, length, rotZ, rotY }) => {
-      // 1. Follicle Dot inside the circle (Left)
-      const dotL = new THREE.Mesh(follicleDotGeo, darkTrimMat);
-      dotL.position.set(pos.x, pos.y, pos.z);
-      headGroup.add(dotL);
-
-      // Follicle Dot inside the circle (Right - mirrored)
-      const dotR = new THREE.Mesh(follicleDotGeo, darkTrimMat);
-      dotR.position.set(-pos.x, pos.y, pos.z);
-      headGroup.add(dotR);
-
-      // 2. Whisker Hair (Fine tapered strand pointing SIDEWAYS away from nose)
-      const hairGeo = new THREE.CylinderGeometry(0.001, 0.0035, length, 8);
-      hairGeo.translate(0, length / 2, 0); // Origin at follicle root
-      whiskerHairGeos.push(hairGeo);
-
-      // Left whisker: points horizontally to the left (-X) and droops slightly
-      const hairL = new THREE.Mesh(hairGeo, whiskerHairMat);
-      hairL.position.set(pos.x, pos.y, pos.z);
-      hairL.rotation.set(0, rotY, rotZ);
-      headGroup.add(hairL);
-
-      // Right whisker: points horizontally to the right (+X) and droops slightly
-      const hairR = new THREE.Mesh(hairGeo, whiskerHairMat);
-      hairR.position.set(-pos.x, pos.y, pos.z);
-      hairR.rotation.set(0, -rotY, -rotZ);
-      headGroup.add(hairR);
-    });
+    // Clean Horizontal Mouth Seam
+    const mouthSeamGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.46, 16);
+    mouthSeamGeo.rotateZ(Math.PI / 2);
+    mouthSeamGeo.translate(0, -0.28, 1.14);
+    const mouthSeam = new THREE.Mesh(mouthSeamGeo, darkTrimMat);
+    headGroup.add(mouthSeam);
 
 
     // --- ARTICULATED LOWER JAW & PUPPY CHIN ---
@@ -933,13 +819,12 @@ export default function RobotAvatar({
       skullGeo.dispose();
       faceGeo.dispose();
       snoutGeo.dispose();
-      whiskerPadGeo.dispose();
       noseGeo.dispose();
-      nostrilGeo.dispose();
-      follicleDotGeo.dispose();
-      whiskerHairGeos.forEach((g) => g.dispose());
+      lensRimGeo.dispose();
+      lensGlassGeo.dispose();
+      lensGlassMat.dispose();
+      mouthSeamGeo.dispose();
       chinGeo.dispose();
-      lowerLipGeo.dispose();
       mouthInteriorGeo.dispose();
       tongueGeo.dispose();
       tongueGrooveGeo.dispose();

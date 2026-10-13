@@ -52,6 +52,9 @@ contextBridge.exposeInMainWorld('mocoApi', {
   captureScreen: () => ipcRenderer.invoke('screen:capture'),
   analyzeScreen: (prompt) => ipcRenderer.invoke('screen:analyze', { prompt }),
   translate: (text, targetLanguage) => ipcRenderer.invoke('translate:text', { text, targetLanguage }),
+  searchWeb: (query) => ipcRenderer.invoke('web:search', { query }),
+  getWeather: (location) => ipcRenderer.invoke('weather:get', { location }),
+  getDeviceBattery: () => ipcRenderer.invoke('system:battery'),
 
   // 5. Settings & Open on Startup
   getStartupSetting: () => ipcRenderer.invoke('settings:get-startup'),
@@ -61,6 +64,14 @@ contextBridge.exposeInMainWorld('mocoApi', {
   toggleMascot: (enable) => ipcRenderer.invoke('mascot:toggle', { enable }),
   mascotHover: (isHovered) => ipcRenderer.send('mascot:hover', isHovered),
   mascotClick: () => ipcRenderer.send('mascot:click'),
+
+  // 7. Autonomous Voice Agent (No TTS, action & tool routing)
+  processVoiceCommand: (command) => ipcRenderer.invoke('voice:command', { command }),
+  onVoiceNavigate: (callback) => {
+    const handler = (event, target) => callback(target);
+    ipcRenderer.on('voice:navigate', handler);
+    return () => ipcRenderer.removeListener('voice:navigate', handler);
+  },
 
   // Window Controls
   closeApp: () => ipcRenderer.send('window:close'),

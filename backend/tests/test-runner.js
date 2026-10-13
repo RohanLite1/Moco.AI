@@ -107,6 +107,9 @@ async function runAutomatedTests() {
   const v6 = await processVoiceCommand('play chess');
   assert('Voice Agent: Navigated to games arcade', v6.action === 'NAVIGATE' && v6.target === 'games');
 
+  const v7 = await processVoiceCommand('what is the weather like today');
+  assert('Voice Agent: Retrieved live weather', v7.action === 'SEARCH' && v7.category === 'weather' && v7.reply.length > 0);
+
   console.log(`\nResults: ${passed}/${total} tests passed.\n`);
 }
 

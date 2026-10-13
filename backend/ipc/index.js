@@ -13,6 +13,7 @@ import { getItem, setItem } from '../services/storageService.js';
 import { getStartupSetting, setStartupSetting } from '../services/settingsService.js';
 import { createMascotWindow, handleMascotHover, handleMascotClick, destroyMascotWindow } from '../services/mascotService.js';
 import { processVoiceCommand } from '../services/voiceAgentService.js';
+import { askLiveSearchAI, getLiveWeather } from '../services/searchService.js';
 
 // Stateful game instances per session
 let activeChess = new ChessGame();
@@ -135,6 +136,15 @@ export function setupIpcHandlers(mainWindow) {
 
   ipcMain.handle('translate:text', async (event, { text, targetLanguage }) => {
     return translateText(text, targetLanguage);
+  });
+
+  // Real-time Search & Live Weather (Zero API Keys)
+  ipcMain.handle('web:search', async (event, { query }) => {
+    return askLiveSearchAI(query);
+  });
+
+  ipcMain.handle('weather:get', async (event, { location }) => {
+    return getLiveWeather(location);
   });
 
   // --- 5. Settings & Open on Startup ---

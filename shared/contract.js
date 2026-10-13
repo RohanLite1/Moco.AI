@@ -61,6 +61,8 @@ export const IPC_CHANNELS = {
  * - captureScreen(): Promise<{ dataUrl: string, resolution: {width, height} }>
  * - analyzeScreen(prompt?: string): Promise<{ capture: any, analysis: string }>
  * - translate(text: string, targetLanguage: string): Promise<{ translation: string }>
+ * - searchWeb(query: string): Promise<{ success: boolean, action: string, reply: string, data?: any }>
+ * - getWeather(location?: string): Promise<{ success: boolean, location: string, summary: string }>
  * 
  * --- Settings & Open on Startup ---
  * - getStartupSetting(): Promise<{ openAtLogin: boolean }>

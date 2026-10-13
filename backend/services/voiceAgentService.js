@@ -5,6 +5,7 @@ import { evaluateExpression } from './mathService.js';
 import { analyzeScreen } from './screenService.js';
 import { translateText } from './translatorService.js';
 import { generateStreamingResponse } from './ollamaService.js';
+import { askLiveSearchAI } from './searchService.js';
 
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://localhost:11434';
 const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'gemma3:4b';
@@ -157,6 +158,21 @@ export async function processVoiceCommand(command, onStatus = null) {
         reply: `[${targetLang}]: ${transRes.translation}`,
         data: transRes
       };
+    } catch (e) {
+      // Fall through to LLM
+    }
+  }
+
+  // E. Live Weather & Real-Time Web Search Commands
+  if (
+    /\b(weather|temperature|forecast|is it raining|how cold|how hot|climate)\b/i.test(lower) ||
+    /\b(search for|search the web for|look up|google|what is the latest news|who won)\b/i.test(lower)
+  ) {
+    onStatus?.('speaking');
+    try {
+      const searchRes = await askLiveSearchAI(cleanCmd);
+      onStatus?.('idle');
+      return searchRes;
     } catch (e) {
       // Fall through to LLM
     }

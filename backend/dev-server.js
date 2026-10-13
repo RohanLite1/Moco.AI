@@ -7,6 +7,7 @@ import { generateStreamingResponse, checkOllamaHealth } from './services/ollamaS
 import { ChessGame } from './services/gameEngines/chessEngine.js';
 import { TetrisGame } from './services/gameEngines/tetrisEngine.js';
 import { SnakeGame } from './services/gameEngines/snakeEngine.js';
+import { askLiveSearchAI, getLiveWeather } from './services/searchService.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -83,6 +84,22 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/translate' && req.method === 'POST') {
     const body = await parseBody(req);
     const result = await translateText(body.text || '', body.targetLanguage || 'Spanish');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(result));
+    return;
+  }
+
+  if (pathname === '/api/search' && req.method === 'POST') {
+    const body = await parseBody(req);
+    const result = await askLiveSearchAI(body.query || '');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(result));
+    return;
+  }
+
+  if (pathname === '/api/weather' && req.method === 'POST') {
+    const body = await parseBody(req);
+    const result = await getLiveWeather(body.location || '');
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(result));
     return;

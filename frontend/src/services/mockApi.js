@@ -108,6 +108,30 @@ export const mockApi = {
     return { success: true, action: 'CHAT', reply: `Moco heard: "${command}"` };
   },
 
+  searchWeb: async (query) => {
+    try {
+      const res = await fetch('http://localhost:3001/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+      });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return { success: true, reply: `Found live search results for "${query}"` };
+  },
+
+  getWeather: async (location) => {
+    try {
+      const res = await fetch('http://localhost:3001/api/weather', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ location })
+      });
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return { success: true, summary: `Weather data for ${location || 'local'}` };
+  },
+
   onVoiceNavigate: (callback) => {
     return () => {};
   }

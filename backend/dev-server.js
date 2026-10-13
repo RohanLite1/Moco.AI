@@ -8,6 +8,7 @@ import { ChessGame } from './services/gameEngines/chessEngine.js';
 import { TetrisGame } from './services/gameEngines/tetrisEngine.js';
 import { SnakeGame } from './services/gameEngines/snakeEngine.js';
 import { askLiveSearchAI, getLiveWeather } from './services/searchService.js';
+import { getDeviceBattery } from './services/systemService.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -100,6 +101,13 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/weather' && req.method === 'POST') {
     const body = await parseBody(req);
     const result = await getLiveWeather(body.location || '');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(result));
+    return;
+  }
+
+  if (pathname === '/api/system/battery' && req.method === 'GET') {
+    const result = await getDeviceBattery();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(result));
     return;
@@ -962,9 +970,9 @@ function getHudHtml() {
 
         <!-- Right: Telemetry & Controls -->
         <div class="pill-actions">
-          <div class="pill-badge" title="Battery 98%">
+          <div class="pill-badge" id="batteryBadge" title="Battery">
             <span style="color: #38bdf8;">⚡</span>
-            <span>98%</span>
+            <span id="batteryPercentText">--%</span>
           </div>
 
           <button id="themeToggleBtn" class="pill-btn" title="Toggle Dark/Light Theme">
@@ -1692,10 +1700,41 @@ function getHudHtml() {
       }
     }
 
-    document.getElementById('calcForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      plotGraph(document.getElementById('calcInput').value.trim());
-    });
+    // --- Device Battery Telemetry ---
+    async function updateBatteryIndicator() {
+      try {
+        let percent = null;
+        let isCharging = false;
+
+        if (navigator.getBattery) {
+          try {
+            const b = await navigator.getBattery();
+            percent = Math.round(b.level * 100);
+            isCharging = b.charging;
+            b.onlevelchange = () => updateBatteryIndicator();
+            b.onchargingchange = () => updateBatteryIndicator();
+          } catch (_) {}
+        }
+
+        if (percent === null) {
+          const res = await fetch('/api/system/battery');
+          const data = await res.json();
+          if (data && data.hasBattery) {
+            percent = data.percent;
+            isCharging = data.isCharging;
+          }
+        }
+
+        if (percent !== null) {
+          const textEl = document.getElementById('batteryPercentText');
+          const badgeEl = document.getElementById('batteryBadge');
+          if (textEl) textEl.textContent = percent + '%';
+          if (badgeEl) badgeEl.title = 'Device Battery: ' + percent + '%' + (isCharging ? ' (Charging ⚡)' : '');
+        }
+      } catch (_) {}
+    }
+    updateBatteryIndicator();
+    setInterval(updateBatteryIndicator, 30000);
   </script>
 </body>
 </html>`;

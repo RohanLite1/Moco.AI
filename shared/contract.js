@@ -63,6 +63,7 @@ export const IPC_CHANNELS = {
  * - translate(text: string, targetLanguage: string): Promise<{ translation: string }>
  * - searchWeb(query: string): Promise<{ success: boolean, action: string, reply: string, data?: any }>
  * - getWeather(location?: string): Promise<{ success: boolean, location: string, summary: string }>
+ * - getDeviceBattery(): Promise<{ hasBattery: boolean, percent: number, isCharging: boolean }>
  * 
  * --- Settings & Open on Startup ---
  * - getStartupSetting(): Promise<{ openAtLogin: boolean }>

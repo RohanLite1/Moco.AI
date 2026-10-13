@@ -132,6 +132,14 @@ export const mockApi = {
     return { success: true, summary: `Weather data for ${location || 'local'}` };
   },
 
+  getDeviceBattery: async () => {
+    try {
+      const res = await fetch('http://localhost:3001/api/system/battery');
+      if (res.ok) return await res.json();
+    } catch (_) {}
+    return { hasBattery: true, percent: 100, isCharging: true };
+  },
+
   onVoiceNavigate: (callback) => {
     return () => {};
   }

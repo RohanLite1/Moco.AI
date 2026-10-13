@@ -34,8 +34,53 @@ export default function DynamicIsland({
   const [isPinned, setIsPinned] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState('');
   const [voiceStatusText, setVoiceStatusText] = useState('');
+  const [batteryPercent, setBatteryPercent] = useState(100);
+  const [isCharging, setIsCharging] = useState(false);
   const recognitionRef = useRef(null);
   const latestTranscriptRef = useRef('');
+
+  // Real device battery telemetry
+  useEffect(() => {
+    let isMounted = true;
+
+    const queryBattery = async () => {
+      // 1. Try modern browser Battery API (Edge / Chrome / Chromium)
+      if (typeof navigator !== 'undefined' && 'getBattery' in navigator) {
+        try {
+          const battery = await navigator.getBattery();
+          if (isMounted) {
+            setBatteryPercent(Math.round(battery.level * 100));
+            setIsCharging(Boolean(battery.charging));
+          }
+          const onLevelChange = () => {
+            if (isMounted) setBatteryPercent(Math.round(battery.level * 100));
+          };
+          const onChargingChange = () => {
+            if (isMounted) setIsCharging(Boolean(battery.charging));
+          };
+          battery.addEventListener('levelchange', onLevelChange);
+          battery.addEventListener('chargingchange', onChargingChange);
+          return;
+        } catch (_) {}
+      }
+
+      // 2. Query Moco backend API (Windows CIM Win32_Battery via Electron IPC or local dev server)
+      try {
+        const info = await api.getDeviceBattery?.();
+        if (info && info.hasBattery && isMounted) {
+          setBatteryPercent(info.percent);
+          setIsCharging(Boolean(info.isCharging));
+        }
+      } catch (_) {}
+    };
+
+    queryBattery();
+    const interval = setInterval(queryBattery, 30000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   // Initialize Speech Recognition once without tearing down on each transcript update
   useEffect(() => {
@@ -279,9 +324,12 @@ export default function DynamicIsland({
             {/* Right: Telemetry & Quick Action Controls */}
             <div className="pill-actions">
               {/* Battery & Telemetry Badge */}
-              <div className="pill-badge" title="Robodog Core Battery 98%">
+              <div
+                className="pill-badge"
+                title={`Device Battery: ${batteryPercent}%${isCharging ? ' (Charging ⚡)' : ''}`}
+              >
                 <Battery size={13} color={activeTheme === 'light' ? '#0284c7' : '#38bdf8'} />
-                <span>98%</span>
+                <span>{batteryPercent}%</span>
               </div>
 
               {/* Theme Indicator & Toggle */}

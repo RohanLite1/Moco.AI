@@ -14,6 +14,7 @@ import { getStartupSetting, setStartupSetting } from '../services/settingsServic
 import { createMascotWindow, handleMascotHover, handleMascotClick, destroyMascotWindow } from '../services/mascotService.js';
 import { processVoiceCommand } from '../services/voiceAgentService.js';
 import { askLiveSearchAI, getLiveWeather } from '../services/searchService.js';
+import { getDeviceBattery } from '../services/systemService.js';
 
 // Stateful game instances per session
 let activeChess = new ChessGame();
@@ -145,6 +146,11 @@ export function setupIpcHandlers(mainWindow) {
 
   ipcMain.handle('weather:get', async (event, { location }) => {
     return getLiveWeather(location);
+  });
+
+  // Real-time Device Battery Telemetry
+  ipcMain.handle('system:battery', async () => {
+    return getDeviceBattery();
   });
 
   // --- 5. Settings & Open on Startup ---

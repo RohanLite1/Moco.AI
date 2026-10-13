@@ -423,8 +423,9 @@
 
 /* Right: Active Widget Body */
 .island-widget-body {
-  padding: 18px;
-  overflow: hidden;
+  padding: 16px;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }

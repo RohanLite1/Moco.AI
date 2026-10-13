@@ -15,6 +15,7 @@ import {
   Zap,
   Target
 } from 'lucide-react';
+import '../styles/games.css';
 
 /* ========================================================================= */
 /* TETRIS ENGINE CONSTANTS & HELPERS                                         */
@@ -271,7 +272,79 @@ export default function GamesWidget() {
 }
 
 /* ========================================================================= */
-/* 1. INTERACTIVE GAMES HUB (TILES WITH ANIMATED VISUAL PREVIEWS)             */
+/* 2D iOS-LIKE SQUIRCLE APP ICONS                                            */
+/* ========================================================================= */
+function TetrisAppIcon() {
+  return (
+    <div className="games-ios-icon tetris" title="Cyber Tetris">
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+        {/* T-tetromino and I-block */}
+        <rect x="5" y="10" width="6" height="6" rx="1.5" fill="#ffffff" fillOpacity="0.95" />
+        <rect x="12" y="10" width="6" height="6" rx="1.5" fill="#38bdf8" />
+        <rect x="19" y="10" width="6" height="6" rx="1.5" fill="#ffffff" fillOpacity="0.9" />
+        <rect x="12" y="17" width="6" height="6" rx="1.5" fill="#a78bfa" />
+      </svg>
+    </div>
+  );
+}
+
+function ChessAppIcon() {
+  return (
+    <div className="games-ios-icon chess" title="Quantum Chess">
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+        {/* Crisp 2D Knight / Crown piece */}
+        <path
+          d="M7 23h16v2a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-2zm2-2c0-3 1.8-5 2.8-7-.4-1-.8-2.6-.8-3.6a3.6 3.6 0 0 1 6.5-2.2c1.4.5 1.8 1.4 2.3 2.8 1.4 0 2.8 1.4 2.8 2.8 0 1.8-1.8 3.2-2.8 4.2l.5 3H9z"
+          fill="#ffffff"
+          fillOpacity="0.96"
+        />
+        <circle cx="13" cy="11" r="1.2" fill="#4f46e5" />
+      </svg>
+    </div>
+  );
+}
+
+function SnakeAppIcon() {
+  return (
+    <div className="games-ios-icon snake" title="Neon Serpent">
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+        {/* Serpentine Ribbon with glowing head and orb */}
+        <path
+          d="M8 21c0-2.2 1.8-4 4-4h6c2.2 0 4-1.8 4-4s-1.8-4-4-4h-2"
+          stroke="#ffffff"
+          strokeWidth="3.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle cx="8" cy="21" r="2.8" fill="#ffffff" />
+        <circle cx="21" cy="21" r="2.4" fill="#fef08a" />
+      </svg>
+    </div>
+  );
+}
+
+function TicTacToeAppIcon() {
+  return (
+    <div className="games-ios-icon tictactoe" title="Matrix 3x3 Duel">
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+        {/* 3x3 Grid */}
+        <line x1="11" y1="6" x2="11" y2="24" stroke="#ffffff" strokeOpacity="0.45" strokeWidth="1.8" strokeLinecap="round" />
+        <line x1="19" y1="6" x2="19" y2="24" stroke="#ffffff" strokeOpacity="0.45" strokeWidth="1.8" strokeLinecap="round" />
+        <line x1="6" y1="11" x2="24" y2="11" stroke="#ffffff" strokeOpacity="0.45" strokeWidth="1.8" strokeLinecap="round" />
+        <line x1="6" y1="19" x2="24" y2="19" stroke="#ffffff" strokeOpacity="0.45" strokeWidth="1.8" strokeLinecap="round" />
+        {/* Top X */}
+        <path d="M7 7l3 3m0-3l-3 3" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" />
+        {/* Bottom O */}
+        <circle cx="20.5" cy="20.5" r="2.2" stroke="#ffffff" strokeWidth="2.2" />
+        {/* Center X in Gold */}
+        <path d="M13.5 13.5l3 3m0-3l-3 3" stroke="#fef08a" strokeWidth="2.2" strokeLinecap="round" />
+      </svg>
+    </div>
+  );
+}
+
+/* ========================================================================= */
+/* 1. INTERACTIVE GAMES HUB (2D iOS-LIKE APP TILES)                           */
 /* ========================================================================= */
 function GamesHub({ onSelectGame }) {
   const games = [
@@ -279,211 +352,101 @@ function GamesHub({ onSelectGame }) {
       id: 'tetris',
       title: 'Cyber Tetris',
       tag: 'Arcade Classic',
-      accent: '#06b6d4',
-      glow: 'rgba(6, 182, 212, 0.35)',
-      description: 'Stack vibrant tetrominoes, create combos & beat high scores.',
-      type: 'tetris'
+      meta: 'Single Player • High Score',
+      description: 'Stack vibrant falling tetromino blocks, clear rows and set records.',
+      iconComponent: TetrisAppIcon
     },
     {
       id: 'chess',
       title: 'Quantum Chess',
       tag: 'Grandmaster Tactics',
-      accent: '#a855f7',
-      glow: 'rgba(168, 85, 247, 0.35)',
-      description: 'Interactive tactical duel with valid path highlights & captures.',
-      type: 'chess'
+      meta: 'Tactical Pass & Play',
+      description: 'Interactive board duel with valid move highlights, captures & strategy.',
+      iconComponent: ChessAppIcon
     },
     {
       id: 'snake',
       title: 'Neon Serpent',
       tag: 'Reflex Speed',
-      accent: '#10b981',
-      glow: 'rgba(16, 185, 129, 0.35)',
-      description: 'Maneuver the light ribbon, devour energy orbs and avoid collisions.',
-      type: 'snake'
+      meta: 'Fast Reflex • High Score',
+      description: 'Maneuver the light ribbon, devour energy orbs and avoid border collisions.',
+      iconComponent: SnakeAppIcon
     },
     {
       id: 'tictactoe',
       title: 'Matrix 3x3 Duel',
       tag: 'Quick AI Match',
-      accent: '#f59e0b',
-      glow: 'rgba(245, 158, 11, 0.35)',
-      description: 'Classic rapid-fire grid duel against AI or a friend.',
-      type: 'tictactoe'
+      meta: 'vs Smart AI or Local',
+      description: 'Classic rapid-fire grid duel with instant turn feedback and rematch mode.',
+      iconComponent: TicTacToeAppIcon
     }
   ];
 
   return (
-    <div className="flex-1 flex flex-col p-2 overflow-y-auto scrollbar-thin">
-      {/* Header Banner */}
-      <div className="flex items-center justify-between mb-3 px-1">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-cyan-500/10 border border-cyan-400/30 text-cyan-300">
-            <Gamepad2 size={16} />
+    <div className="games-container">
+      <div className="games-card">
+        {/* Header Banner */}
+        <div className="games-header">
+          <div className="games-header-left">
+            <div className="games-icon-badge">
+              <Gamepad2 size={18} strokeWidth={2.2} />
+            </div>
+            <div>
+              <h2 className="games-header-title">Arcade Station</h2>
+              <p className="games-header-sub">
+                Interactive 2D Mini-Games for Focus Breaks
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-sm font-bold tracking-wide text-white uppercase font-mono">
-              Arcade Station
-            </h2>
-            <p className="text-[11px] text-slate-400">
-              Interactive mini-games for focus breaks
-            </p>
+          <div className="games-live-badge">
+            <span className="games-pulse-dot" />
+            <span>4 APPS READY</span>
           </div>
         </div>
-        <div className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-          4 Modules Online
-        </div>
-      </div>
 
-      {/* 2x2 Interactive Tiles Grid */}
-      <div className="grid grid-cols-2 gap-3 flex-1">
-        {games.map((g) => (
-          <div
-            key={g.id}
-            onClick={() => onSelectGame(g.id)}
-            className="group relative flex flex-col justify-between p-3.5 rounded-2xl bg-slate-900/70 border border-white/10 hover:border-cyan-400/60 transition-all duration-300 cursor-pointer overflow-hidden hover:scale-[1.02] hover:shadow-xl"
-            style={{
-              boxShadow: `0 8px 24px rgba(0, 0, 0, 0.4)`
-            }}
-          >
-            {/* Background Ambient Glow */}
-            <div
-              className="absolute -top-10 -right-10 w-28 h-28 rounded-full blur-2xl opacity-20 group-hover:opacity-50 transition-opacity"
-              style={{ backgroundColor: g.accent }}
-            />
-
-            {/* Top Info */}
-            <div className="flex items-start justify-between z-10 mb-2">
-              <div>
-                <span
-                  className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md border tracking-wider"
-                  style={{
-                    color: g.accent,
-                    borderColor: `${g.accent}40`,
-                    backgroundColor: `${g.accent}15`
-                  }}
-                >
-                  {g.tag}
-                </span>
-                <h3 className="text-sm font-bold text-white mt-1 group-hover:text-cyan-300 transition-colors">
-                  {g.title}
-                </h3>
-              </div>
+        {/* 2x2 Interactive iOS-like App Tiles Grid */}
+        <div className="games-tiles-grid">
+          {games.map((g) => {
+            const Icon = g.iconComponent;
+            return (
               <div
-                className="w-7 h-7 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110"
-                style={{ backgroundColor: `${g.accent}20`, color: g.accent }}
+                key={g.id}
+                onClick={() => onSelectGame(g.id)}
+                className="games-tile-card"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelectGame(g.id);
+                  }
+                }}
               >
-                <Play size={12} fill="currentColor" />
+                {/* Top: 2D iOS Squircle App Icon & Category Tag */}
+                <div className="games-tile-header">
+                  <Icon />
+                  <span className="games-tile-tag">{g.tag}</span>
+                </div>
+
+                {/* Middle: Game Title & Clean Description */}
+                <div className="games-tile-body">
+                  <h3 className="games-tile-title">{g.title}</h3>
+                  <p className="games-tile-desc">{g.description}</p>
+                </div>
+
+                {/* Bottom: Players Meta & Play Button Action */}
+                <div className="games-tile-footer">
+                  <span className="games-tile-meta">{g.meta}</span>
+                  <button type="button" className="games-tile-play-btn">
+                    <span>Play Game</span>
+                    <Play size={10} fill="currentColor" />
+                  </button>
+                </div>
               </div>
-            </div>
-
-            {/* Animated Interactive Visual Preview Tile */}
-            <div className="w-full h-20 rounded-xl bg-black/40 border border-white/5 flex items-center justify-center overflow-hidden my-1 relative">
-              {g.type === 'tetris' && <TetrisPreviewTile />}
-              {g.type === 'chess' && <ChessPreviewTile />}
-              {g.type === 'snake' && <SnakePreviewTile />}
-              {g.type === 'tictactoe' && <TicTacToePreviewTile />}
-            </div>
-
-            {/* Bottom Details & CTA */}
-            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400 z-10">
-              <span className="line-clamp-1 text-slate-400">{g.description}</span>
-              <span className="text-cyan-400 font-semibold group-hover:translate-x-0.5 transition-transform shrink-0 ml-1">
-                Play →
-              </span>
-            </div>
-          </div>
-        ))}
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
-}
-
-/* ========================================================================= */
-/* TILE VISUAL PREVIEWS (LIVELY MINI ANIMATIONS)                              */
-/* ========================================================================= */
-function TetrisPreviewTile() {
-  return (
-    <div className="flex items-center gap-1.5 p-2 animate-pulse">
-      <div className="grid grid-cols-2 gap-0.5">
-        <div className="w-3.5 h-3.5 rounded-sm bg-cyan-400 shadow-[0_0_8px_#06b6d4]" />
-        <div className="w-3.5 h-3.5 rounded-sm bg-cyan-400 shadow-[0_0_8px_#06b6d4]" />
-        <div className="w-3.5 h-3.5 rounded-sm bg-cyan-400 shadow-[0_0_8px_#06b6d4]" />
-        <div className="w-3.5 h-3.5 rounded-sm bg-cyan-400 shadow-[0_0_8px_#06b6d4]" />
-      </div>
-      <div className="grid grid-cols-3 gap-0.5">
-        <div className="w-3.5 h-3.5 rounded-sm bg-transparent" />
-        <div className="w-3.5 h-3.5 rounded-sm bg-purple-400 shadow-[0_0_8px_#c084fc]" />
-        <div className="w-3.5 h-3.5 rounded-sm bg-transparent" />
-        <div className="w-3.5 h-3.5 rounded-sm bg-purple-400 shadow-[0_0_8px_#c084fc]" />
-        <div className="w-3.5 h-3.5 rounded-sm bg-purple-400 shadow-[0_0_8px_#c084fc]" />
-        <div className="w-3.5 h-3.5 rounded-sm bg-purple-400 shadow-[0_0_8px_#c084fc]" />
-      </div>
-      <div className="grid grid-cols-2 gap-0.5">
-        <div className="w-3.5 h-3.5 rounded-sm bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-        <div className="w-3.5 h-3.5 rounded-sm bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-        <div className="w-3.5 h-3.5 rounded-sm bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-        <div className="w-3.5 h-3.5 rounded-sm bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-      </div>
-    </div>
-  );
-}
-
-function ChessPreviewTile() {
-  return (
-    <div className="grid grid-cols-4 gap-1 p-2">
-      <div className="w-4 h-4 rounded bg-purple-900/60 border border-purple-500/30 flex items-center justify-center text-xs text-purple-300">
-        ♞
-      </div>
-      <div className="w-4 h-4 rounded bg-cyan-950/40 border border-cyan-500/20 flex items-center justify-center text-xs text-cyan-200">
-        •
-      </div>
-      <div className="w-4 h-4 rounded bg-purple-900/60 border border-purple-500/30 flex items-center justify-center text-xs text-purple-300">
-        ♛
-      </div>
-      <div className="w-4 h-4 rounded bg-cyan-950/40 border border-cyan-500/20 flex items-center justify-center text-xs text-cyan-200">
-        •
-      </div>
-      <div className="w-4 h-4 rounded bg-cyan-950/40 border border-cyan-500/20 flex items-center justify-center text-xs text-cyan-200">
-        •
-      </div>
-      <div className="w-4 h-4 rounded bg-cyan-600/30 border border-cyan-400/50 flex items-center justify-center text-xs text-cyan-300 font-bold shadow-[0_0_8px_#06b6d4]">
-        ♘
-      </div>
-      <div className="w-4 h-4 rounded bg-cyan-950/40 border border-cyan-500/20 flex items-center justify-center text-xs text-cyan-200">
-        •
-      </div>
-      <div className="w-4 h-4 rounded bg-purple-900/60 border border-purple-500/30 flex items-center justify-center text-xs text-purple-300">
-        ♟
-      </div>
-    </div>
-  );
-}
-
-function SnakePreviewTile() {
-  return (
-    <div className="flex items-center gap-1">
-      <div className="flex items-center gap-1">
-        <div className="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]" />
-        <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/80" />
-        <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/60" />
-        <div className="w-2 h-2 rounded-full bg-emerald-400/40" />
-      </div>
-      <div className="w-6 border-t border-dashed border-emerald-500/40 mx-1" />
-      <div className="w-3 h-3 rounded-full bg-rose-500 animate-ping shadow-[0_0_10px_#f43f5e]" />
-    </div>
-  );
-}
-
-function TicTacToePreviewTile() {
-  return (
-    <div className="grid grid-cols-3 gap-1 p-2 font-mono font-bold text-xs">
-      <div className="w-4 h-4 rounded bg-white/5 flex items-center justify-center text-cyan-400">X</div>
-      <div className="w-4 h-4 rounded bg-white/5 flex items-center justify-center text-purple-400">O</div>
-      <div className="w-4 h-4 rounded bg-white/5 flex items-center justify-center text-cyan-400">X</div>
-      <div className="w-4 h-4 rounded bg-white/5 flex items-center justify-center text-purple-400">O</div>
-      <div className="w-4 h-4 rounded bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-300">X</div>
-      <div className="w-4 h-4 rounded bg-white/5 flex items-center justify-center text-slate-500">•</div>
     </div>
   );
 }

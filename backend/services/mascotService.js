@@ -143,7 +143,7 @@ export function createMascotWindow(mainWindow) {
     resizable: false,
     opacity: 0.35, // Low opacity by default
     webPreferences: {
-      preload: path.join(__dirname, '../preload.js'),
+      preload: path.join(__dirname, '../preload.cjs'),
       nodeIntegration: false,
       contextIsolation: true
     }

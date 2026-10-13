@@ -23,7 +23,7 @@ async function createWindow() {
     hasShadow: true,
     alwaysOnTop: false,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
       contextIsolation: true
     }
@@ -31,6 +31,14 @@ async function createWindow() {
 
   // Setup backend IPC handlers
   setupIpcHandlers(mainWindow);
+
+  mainWindow.webContents.on('preload-error', (event, preloadPath, error) => {
+    console.error('CRITICAL: PRELOAD SCRIPT ERROR:', preloadPath, error);
+  });
+
+  mainWindow.webContents.on('console-message', (event, level, message) => {
+    console.log('[BROWSER LOG]:', message);
+  });
 
   // Load URL (Vite dev server in dev, or local index.html in production build)
   const isDev = !app.isPackaged && process.env.NODE_ENV !== 'production';

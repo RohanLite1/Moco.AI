@@ -281,7 +281,64 @@ export default function DynamicIsland({
     };
   }, []);
 
-  // Initialize Speech Recognition once without tearing down on each transcript update
+  // Unified Voice Command Handler
+  const executeVoiceCommand = async (finalCmd) => {
+    if (!finalCmd || finalCmd === 'Listening...' || finalCmd.startsWith('Listening')) {
+      onStatusChange?.('idle');
+      setVoiceTranscript('');
+      setVoiceStatusText('');
+      return;
+    }
+
+    onStatusChange?.('thinking');
+    setVoiceStatusText(`Routing: "${finalCmd}"...`);
+    try {
+      const res = await api.processVoiceCommand(finalCmd);
+      if (res?.action === 'NAVIGATE' && res?.target) {
+        setActiveTab?.(res.target);
+        const navMsg = `Switched to ${res.target.toUpperCase()} tab.`;
+        setVoiceStatusText(navMsg);
+        setVoiceAnswer(navMsg);
+        onStatusChange?.('happy');
+        setTimeout(() => {
+          onStatusChange?.('idle');
+          setVoiceStatusText('');
+        }, 3000);
+      } else if (res?.action === 'ROBOT_ACTION' && res?.target) {
+        window.dispatchEvent(
+          new CustomEvent('moco:robot-action', { detail: { action: res.target } })
+        );
+        if (res.target === 'dance' && !isMusicPlaying) {
+          setActiveTab?.('music');
+        }
+        const actMsg = res?.reply || `Moco is performing ${res.target}!`;
+        setVoiceStatusText(actMsg);
+        setVoiceAnswer(actMsg);
+        onStatusChange?.('happy');
+        setTimeout(() => {
+          onStatusChange?.('idle');
+          setVoiceStatusText('');
+        }, 3500);
+      } else {
+        const answerMsg = res?.reply || 'Command completed successfully.';
+        setVoiceStatusText(`"${answerMsg}"`);
+        setVoiceAnswer(answerMsg);
+        onStatusChange?.('speaking');
+        setTimeout(() => {
+          onStatusChange?.('idle');
+          setVoiceStatusText('');
+        }, 5000);
+      }
+    } catch (err) {
+      console.error('Voice routing error:', err);
+      const errMsg = `Error: ${err.message || 'Could not process query'}`;
+      onStatusChange?.('idle');
+      setVoiceAnswer(errMsg);
+      setVoiceStatusText(errMsg);
+    }
+  };
+
+  // Initialize Speech Recognition once for browser environment fallback
   useEffect(() => {
     const SpeechRecognition =
       typeof window !== 'undefined' &&
@@ -320,43 +377,7 @@ export default function DynamicIsland({
 
     recognition.onend = async () => {
       const finalCmd = latestTranscriptRef.current.trim();
-      if (finalCmd && finalCmd !== 'Listening...') {
-        onStatusChange?.('thinking');
-        setVoiceStatusText(`Routing: "${finalCmd}"...`);
-        try {
-          const res = await api.processVoiceCommand(finalCmd);
-          if (res?.action === 'NAVIGATE' && res?.target) {
-            setActiveTab?.(res.target);
-            const navMsg = `Switched to ${res.target.toUpperCase()} tab.`;
-            setVoiceStatusText(navMsg);
-            setVoiceAnswer(navMsg);
-            onStatusChange?.('happy');
-            setTimeout(() => {
-              onStatusChange?.('idle');
-              setVoiceStatusText('');
-            }, 3000);
-          } else {
-            const answerMsg = res?.reply || 'Command completed successfully.';
-            setVoiceStatusText(`"${answerMsg}"`);
-            setVoiceAnswer(answerMsg);
-            onStatusChange?.('speaking');
-            setTimeout(() => {
-              onStatusChange?.('idle');
-              setVoiceStatusText('');
-            }, 4500);
-          }
-        } catch (err) {
-          console.error('Voice routing error:', err);
-          const errMsg = `Error: ${err.message || 'Could not process query'}`;
-          onStatusChange?.('idle');
-          setVoiceAnswer(errMsg);
-          setVoiceStatusText(errMsg);
-        }
-      } else {
-        onStatusChange?.('idle');
-        setVoiceTranscript('');
-        setVoiceStatusText('');
-      }
+      await executeVoiceCommand(finalCmd);
     };
 
     recognitionRef.current = recognition;
@@ -365,9 +386,78 @@ export default function DynamicIsland({
     };
   }, [onStatusChange, setActiveTab]);
 
-  const handleMicClick = (e) => {
+  const handleMicClick = async (e) => {
     e?.stopPropagation();
+
+    // 1. Electron Desktop Environment: Native Windows Speech Engine (100% offline & packaged exe compatible)
+    if (typeof window !== 'undefined' && window.mocoApi && typeof api.listenNativeVoice === 'function') {
+      if (aiStatus === 'listening') {
+        try { api.stopNativeVoice(); } catch (_) {}
+        onStatusChange?.('idle');
+        setVoiceTranscript('');
+        setVoiceStatusText('');
+        return;
+      }
+
+      latestTranscriptRef.current = '';
+      setVoiceTranscript('Listening (Windows Speech)...');
+      setVoiceStatusText('Listening... Speak into microphone');
+      setVoiceAnswer('');
+      onStatusChange?.('listening');
+
+      try {
+        const result = await api.listenNativeVoice();
+        if (result && result.success && result.text) {
+          latestTranscriptRef.current = result.text;
+          setVoiceTranscript(result.text);
+          await executeVoiceCommand(result.text);
+        } else {
+          onStatusChange?.('idle');
+          setVoiceTranscript('');
+          setVoiceStatusText('');
+        }
+      } catch (err) {
+        console.error('Native speech error:', err);
+        onStatusChange?.('idle');
+        setVoiceTranscript('');
+        setVoiceStatusText('');
+      }
+      return;
+    }
+
+    // 2. Browser Environment Fallback: WebSpeech API (Chrome/Edge localhost)
     if (!recognitionRef.current) {
+      if (typeof api.listenNativeVoice === 'function') {
+        if (aiStatus === 'listening') {
+          try { api.stopNativeVoice(); } catch (_) {}
+          onStatusChange?.('idle');
+          setVoiceTranscript('');
+          setVoiceStatusText('');
+          return;
+        }
+        latestTranscriptRef.current = '';
+        setVoiceTranscript('Listening...');
+        setVoiceStatusText('Listening... Speak now');
+        setVoiceAnswer('');
+        onStatusChange?.('listening');
+        try {
+          const result = await api.listenNativeVoice();
+          if (result && result.success && result.text) {
+            latestTranscriptRef.current = result.text;
+            setVoiceTranscript(result.text);
+            await executeVoiceCommand(result.text);
+          } else {
+            onStatusChange?.('idle');
+            setVoiceTranscript('');
+            setVoiceStatusText('');
+          }
+        } catch (_) {
+          onStatusChange?.('idle');
+          setVoiceTranscript('');
+          setVoiceStatusText('');
+        }
+        return;
+      }
       onStatusChange?.(aiStatus === 'listening' ? 'idle' : 'listening');
       return;
     }

@@ -25,7 +25,10 @@ export const IPC_CHANNELS = {
   // 4. Screen Analysis & Translator
   SCREEN_CAPTURE: 'screen:capture',
   SCREEN_ANALYZE: 'screen:analyze',
+  // Screen & System
   TRANSLATE_TEXT: 'translate:text',
+  VOICE_LISTEN_NATIVE: 'voice:listen-native',
+  VOICE_STOP_NATIVE: 'voice:stop-native',
 
   // Window & System
   WINDOW_TOGGLE: 'window:toggle',
@@ -76,6 +79,8 @@ export const IPC_CHANNELS = {
  * 
  * --- Autonomous Voice Agent (No TTS, action & tool routing) ---
  * - processVoiceCommand(command: string): Promise<{ success: boolean, action: string, reply: string, target?: string, data?: any }>
+ * - listenNativeVoice(): Promise<{ success: boolean, text: string, error?: string }>
+ * - stopNativeVoice(): void
  * - onVoiceNavigate(callback: (targetTab: string) => void): () => void
  * 
  * --- System & Storage ---

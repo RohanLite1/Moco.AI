@@ -1,10 +1,15 @@
 import electron from 'electron';
-const { app, BrowserWindow, globalShortcut, screen } = electron;
+const { app, BrowserWindow, globalShortcut, screen, session } = electron;
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { setupIpcHandlers } from './ipc/index.js';
 import { getStartupSetting } from './services/settingsService.js';
 import { createMascotWindow } from './services/mascotService.js';
+
+// Enable speech dispatcher and WebSpeech features in Chromium
+app.commandLine.appendSwitch('enable-speech-dispatcher');
+app.commandLine.appendSwitch('enable-features', 'WebSpeechAPI');
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -86,6 +91,14 @@ async function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Automatically grant permissions for audio capture, microphone, and media
+  if (session && session.defaultSession) {
+    session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+      callback(true);
+    });
+    session.defaultSession.setPermissionCheckHandler(() => true);
+  }
+
   createWindow();
 
   // If open on startup is enabled, spawn the floating dog logo mascot

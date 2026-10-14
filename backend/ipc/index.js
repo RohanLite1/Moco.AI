@@ -13,6 +13,7 @@ import { getItem, setItem } from '../services/storageService.js';
 import { getStartupSetting, setStartupSetting } from '../services/settingsService.js';
 import { createMascotWindow, handleMascotHover, handleMascotClick, destroyMascotWindow } from '../services/mascotService.js';
 import { processVoiceCommand } from '../services/voiceAgentService.js';
+import { listenToSpeechNative, stopSpeechNative } from '../services/speechService.js';
 import { askLiveSearchAI, getLiveWeather } from '../services/searchService.js';
 import { getDeviceBattery } from '../services/systemService.js';
 
@@ -203,6 +204,15 @@ export function setupIpcHandlers(mainWindow) {
       }
     }
     return result;
+  });
+
+  ipcMain.handle('voice:listen-native', async () => {
+    return listenToSpeechNative();
+  });
+
+  ipcMain.handle('voice:stop-native', () => {
+    stopSpeechNative();
+    return true;
   });
 
   // --- Window controls ---

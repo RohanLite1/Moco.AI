@@ -9,6 +9,7 @@ import { TetrisGame } from './services/gameEngines/tetrisEngine.js';
 import { SnakeGame } from './services/gameEngines/snakeEngine.js';
 import { askLiveSearchAI, getLiveWeather } from './services/searchService.js';
 import { getDeviceBattery } from './services/systemService.js';
+import { listenToSpeechNative, stopSpeechNative } from './services/speechService.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -63,6 +64,20 @@ const server = http.createServer(async (req, res) => {
     const latency = Date.now() - start;
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ...result, latencyMs: latency }));
+    return;
+  }
+
+  if (pathname === '/api/speech/listen' && req.method === 'POST') {
+    const result = await listenToSpeechNative();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(result));
+    return;
+  }
+
+  if (pathname === '/api/speech/stop' && req.method === 'POST') {
+    stopSpeechNative();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true }));
     return;
   }
 
@@ -1514,7 +1529,7 @@ function getHudHtml() {
       setTimeout(() => voiceToast.classList.remove('show'), 3500);
     }
 
-    // --- Chat Form Submission ---
+    // --- Chat Form Submission with Real Ollama 4B Streaming ---
     chatForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const text = chatInput.value.trim();
@@ -1522,7 +1537,63 @@ function getHudHtml() {
       chatInput.value = '';
 
       appendMessage('user', text);
-      handleVoiceCommand(text);
+
+      // Check if it's an explicit navigation or calculator command
+      const lower = text.toLowerCase();
+      if (/^(open|switch to|go to|show|view)\s+(pomodoro|todo|tasks|music|games)/i.test(lower)) {
+        handleVoiceCommand(text);
+        return;
+      }
+
+      setAiStatus('thinking');
+      showToast('THINKING', 'Querying local Ollama 4B model...');
+
+      const assistantMsg = appendMessage('assistant', '');
+      let fullText = '';
+
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: text })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        setAiStatus('speaking');
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const parsed = JSON.parse(line.slice(6));
+                if (parsed.chunk) {
+                  fullText += parsed.chunk;
+                  assistantMsg.textContent = fullText;
+                  chatFeed.scrollTop = chatFeed.scrollHeight;
+                }
+              } catch (_) {}
+            }
+          }
+        }
+
+        setAiStatus('idle');
+      } catch (err) {
+        assistantMsg.textContent = `[Moco AI]: Ollama connection error: ${err.message}. Please verify 'ollama serve' is running.`;
+        setAiStatus('idle');
+      }
     });
 
     function appendMessage(role, text) {
@@ -1531,6 +1602,7 @@ function getHudHtml() {
       msg.textContent = text;
       chatFeed.appendChild(msg);
       chatFeed.scrollTop = chatFeed.scrollHeight;
+      return msg;
     }
 
     // --- Pomodoro Logic ---

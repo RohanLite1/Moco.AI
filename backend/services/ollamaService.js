@@ -7,16 +7,37 @@ const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'gemma3:4b';
 // In-memory conversation history for multi-turn chat
 let conversationHistory = [];
 
-const SYSTEM_PROMPT = {
-  role: 'system',
-  content: `You are Moco, a friendly, sharp, and helpful desktop AI companion.
+export function getSystemPrompt() {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const timeStr = now.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Local';
+
+  return {
+    role: 'system',
+    content: `You are Moco, a friendly, sharp, and helpful desktop AI companion.
+Current Real-Time Context:
+- Today's Date: ${dateStr}
+- Current Time: ${timeStr} (${timeZone})
+
 Guidelines:
 - Speak naturally, warmly, and concisely like a smart friend.
+- When asked about the date, day, or time, always answer accurately using the Current Real-Time Context above.
 - Never use cold, robotic phrases like "Query received", "Processing request", or "Awaiting command".
 - When greeted with "hey", "hi", "hello", or similar greetings, respond warmly and ask how you can help.
 - Give accurate, clear, and direct answers formatted nicely for a desktop HUD.
 - Keep responses concise unless the user explicitly asks for detailed explanations.`
-};
+  };
+}
 
 export function clearConversationHistory() {
   conversationHistory = [];
@@ -28,10 +49,34 @@ export function getConversationHistory() {
 }
 
 /**
+ * Resolves the best available 4B parameter model installed in Ollama
+ */
+export async function resolveActive4BModel() {
+  const preferred = process.env.OLLAMA_MODEL || DEFAULT_MODEL;
+  try {
+    const health = await checkOllamaHealth();
+    if (!health.online || !health.models.length) return preferred;
+
+    // Check if preferred model exists
+    if (health.models.some(m => m === preferred || m.startsWith(preferred + ':'))) {
+      return preferred;
+    }
+
+    // Find any local model containing 4b
+    const fourB = health.models.find(m => m.toLowerCase().includes('4b'));
+    if (fourB) return fourB;
+
+    return health.models[0] || preferred;
+  } catch (_) {
+    return preferred;
+  }
+}
+
+/**
  * Streams response from local Ollama instance with multi-turn memory
  */
 export async function generateStreamingResponse(prompt, onChunk, onStatus) {
-  const model = process.env.OLLAMA_MODEL || DEFAULT_MODEL;
+  const model = await resolveActive4BModel();
 
   try {
     onStatus?.('thinking');
@@ -44,7 +89,7 @@ export async function generateStreamingResponse(prompt, onChunk, onStatus) {
       conversationHistory = conversationHistory.slice(-16);
     }
 
-    const messages = [SYSTEM_PROMPT, ...conversationHistory];
+    const messages = [getSystemPrompt(), ...conversationHistory];
 
     const response = await fetch(`${OLLAMA_HOST}/api/chat`, {
       method: 'POST',

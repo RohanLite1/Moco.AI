@@ -74,6 +74,87 @@ export async function processVoiceCommand(command, onStatus = null) {
     };
   }
 
+  // Instant Date & Time Commands (< 1ms)
+  if (
+    (/\b(date|day)\b/i.test(lower) && /\b(what|today|current|tell|which|now)\b/i.test(lower)) ||
+    /\b(today'?s date|current date|what day is (it|today))\b/i.test(lower)
+  ) {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    onStatus?.('idle');
+    return {
+      success: true,
+      action: 'CHAT',
+      target: null,
+      reply: `Today is ${dateStr}.`
+    };
+  }
+
+  if (
+    (/\b(time)\b/i.test(lower) && /\b(what|current|tell|now)\b/i.test(lower)) ||
+    /\b(what('s| is) (the )?time( now)?|current time|what time is it)\b/i.test(lower)
+  ) {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+    onStatus?.('idle');
+    return {
+      success: true,
+      action: 'CHAT',
+      target: null,
+      reply: `The current time is ${timeStr}.`
+    };
+  }
+
+  // Robot Physical Actions & Tricks (< 1ms)
+  if (/\b(dance|do a dance|groove|start dancing)\b/i.test(lower)) {
+    onStatus?.('idle');
+    return {
+      success: true,
+      action: 'ROBOT_ACTION',
+      target: 'dance',
+      reply: 'Starting dance mode!'
+    };
+  }
+
+  if (/\b(spin|spin around|do a 360|do a spin|turn around)\b/i.test(lower)) {
+    onStatus?.('idle');
+    return {
+      success: true,
+      action: 'ROBOT_ACTION',
+      target: 'spin',
+      reply: '360 gyroscopic spin!'
+    };
+  }
+
+  if (/\b(wave|wave at me|wave paws|say hi|wave your hand|say hello)\b/i.test(lower)) {
+    onStatus?.('idle');
+    return {
+      success: true,
+      action: 'ROBOT_ACTION',
+      target: 'wave',
+      reply: 'Hello! Waving at you!'
+    };
+  }
+
+  if (/\b(cheer|celebrate|hooray|yay|do a cheer|good dog|good boy|good robot)\b/i.test(lower)) {
+    onStatus?.('idle');
+    return {
+      success: true,
+      action: 'ROBOT_ACTION',
+      target: 'cheer',
+      reply: 'Hooray! Celebrating with you!'
+    };
+  }
+
   // A. Navigation Commands (handles articles like "the", "my", "a", "some")
   if (
     /\b(open|switch to|go to|show|view|start|launch|set|run)\s+(?:the\s+|a\s+)?(pomodoro|timer|focus|study timer)\b/i.test(lower) ||

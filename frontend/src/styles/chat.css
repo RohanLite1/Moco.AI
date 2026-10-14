@@ -458,6 +458,42 @@
 /* ========================================================================= */
 /* QUICK PROMPT SUGGESTION PILLS                                             */
 /* ========================================================================= */
+/* OLLAMA LIVE CONNECTION BANNER                                            */
+/* ========================================================================= */
+.chat-ollama-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #059669;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  font-family: 'JetBrains Mono', monospace;
+  width: fit-content;
+  margin: 0 auto;
+  box-sizing: border-box;
+  animation: fadeIn 0.3s ease;
+}
+
+.theme-dark .chat-ollama-status-bar {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(52, 211, 153, 0.3);
+  color: #34d399;
+}
+
+.chat-status-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
 .chat-prompts-container {
   display: flex;
   align-items: center;

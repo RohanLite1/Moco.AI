@@ -20,20 +20,13 @@ export default function ChatWidget({ onStatusChange }) {
     {
       id: 1,
       role: 'assistant',
-      text: "Hello! I am Moco, your cyber companion. How can I assist your workflow, focus session, or coding tasks today?"
+      text: "Hello! I am Moco, your desktop AI companion powered by local Ollama (Gemma 3 4B). Type any question below or ask me to help with your work!"
     }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const messagesEndRef = useRef(null);
-
-  const quickPrompts = [
-    { icon: Zap, label: 'Plan Focus Sprint', prompt: 'Help me break down my work into a 25-minute high-focus sprint.' },
-    { icon: Headphones, label: 'Focus Ambience', prompt: 'What ambient music or binaural beats are best for deep concentration?' },
-    { icon: Gamepad2, label: 'Take a 5m Break', prompt: 'Give me a quick 2-minute stretch routine before I jump into a game of Tetris.' },
-    { icon: Sparkles, label: 'Boost Productivity', prompt: 'Suggest 3 actionable strategies to enter flow state right now.' }
-  ];
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -111,7 +104,7 @@ export default function ChatWidget({ onStatusChange }) {
             <div className="chat-header-titles">
               <div className="chat-title-row">
                 <h2 className="chat-header-title">Moco Intelligence</h2>
-                <span className="chat-model-tag">Gemini 2.5</span>
+                <span className="chat-model-tag">Ollama 4B</span>
               </div>
               <span className="chat-header-sub">
                 Neural Workflow & Focus Assistant
@@ -190,27 +183,11 @@ export default function ChatWidget({ onStatusChange }) {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick Suggestion Chips */}
-        {messages.length <= 3 && (
-          <div className="chat-prompts-container">
-            {quickPrompts.map((qp, i) => {
-              const Icon = qp.icon;
-              return (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={(e) => handleSend(e, qp.prompt)}
-                  className="chat-prompt-pill"
-                >
-                  <span className="chat-prompt-icon">
-                    <Icon size={13} strokeWidth={2.2} />
-                  </span>
-                  <span>{qp.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {/* Live Ollama 4B Connection Banner */}
+        <div className="chat-ollama-status-bar">
+          <span className="chat-status-pulse" />
+          <span>Local Ollama 4B (gemma3:4b) Online • Live Streaming</span>
+        </div>
 
         {/* Thick & Attractive Chatbar */}
         <form onSubmit={handleSend} className="chat-bar-form">

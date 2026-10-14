@@ -66,6 +66,8 @@ contextBridge.exposeInMainWorld('mocoApi', {
 
   // 7. Autonomous Voice Agent (No TTS, action & tool routing)
   processVoiceCommand: (command) => ipcRenderer.invoke('voice:command', { command }),
+  listenNativeVoice: () => ipcRenderer.invoke('voice:listen-native'),
+  stopNativeVoice: () => ipcRenderer.invoke('voice:stop-native'),
   onVoiceNavigate: (callback) => {
     const handler = (event, target) => callback(target);
     ipcRenderer.on('voice:navigate', handler);

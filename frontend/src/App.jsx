@@ -41,7 +41,7 @@ export default function App() {
       case 'music':
         return <MusicWidget />;
       case 'games':
-        return <GamesWidget />;
+        return <GamesWidget onStatusChange={setAiStatus} />;
       default:
         return <ChatWidget onStatusChange={setAiStatus} />;
     }

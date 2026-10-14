@@ -16,10 +16,198 @@ import {
   Sun,
   Moon,
   Battery,
-  Wifi
+  Wifi,
+  RotateCw,
+  Zap
 } from 'lucide-react';
 import RobotAvatar from '../visuals3d/RobotAvatar';
 import { api } from '../services/api';
+
+/**
+ * 120fps Vector OLED Cyber Face for Pill Mode
+ * Ultra lightweight, zero WebGL/GPU overhead, crystal clear at all DPIs
+ */
+function PillRoboFace({ status = 'idle', theme = 'dark' }) {
+  const [blink, setBlink] = useState(false);
+
+  useEffect(() => {
+    let blinkTimeout;
+    const triggerBlink = () => {
+      setBlink(true);
+      setTimeout(() => setBlink(false), 150);
+      blinkTimeout = setTimeout(triggerBlink, 3000 + Math.random() * 3200);
+    };
+    blinkTimeout = setTimeout(triggerBlink, 2600);
+    return () => clearTimeout(blinkTimeout);
+  }, []);
+
+  const isThinking = status === 'thinking';
+  const isHappy = status === 'happy';
+  const isSpeaking = status === 'speaking';
+  const isListening = status === 'listening';
+
+  let eyeColor = theme === 'light' ? '#0284c7' : '#38bdf8';
+  if (isThinking) {
+    eyeColor = '#c084fc';
+  } else if (isHappy) {
+    eyeColor = '#34d399';
+  } else if (isListening) {
+    eyeColor = '#06b6d4';
+  }
+
+  return (
+    <div className={`pill-robo-face status-${status} theme-${theme}`}>
+      <svg viewBox="0 0 48 48" className="pill-face-svg" aria-label="Moco Robot Face">
+        <defs>
+          <radialGradient id={`pillFaceBg-${theme}`} cx="50%" cy="40%" r="55%">
+            {theme === 'light' ? (
+              <>
+                <stop offset="0%" stopColor="#f8fafc" />
+                <stop offset="100%" stopColor="#e2e8f0" />
+              </>
+            ) : (
+              <>
+                <stop offset="0%" stopColor="#0f172a" />
+                <stop offset="100%" stopColor="#020617" />
+              </>
+            )}
+          </radialGradient>
+          <filter id="pillEyeGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="1.5" result="glow" />
+            <feMerge>
+              <feMergeNode in="glow" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Outer Circular Head */}
+        <circle
+          cx="24"
+          cy="24"
+          r="22"
+          fill={`url(#pillFaceBg-${theme})`}
+          stroke={eyeColor}
+          strokeWidth="1.2"
+          strokeOpacity="0.45"
+        />
+
+        {/* Cyber Ear Notches */}
+        <path
+          d="M 9 14 L 6 9 L 14 11 Z"
+          fill={eyeColor}
+          fillOpacity={isHappy ? 0.9 : 0.45}
+          className={isHappy ? "ear-twitch-left" : ""}
+        />
+        <path
+          d="M 39 14 L 42 9 L 34 11 Z"
+          fill={eyeColor}
+          fillOpacity={isHappy ? 0.9 : 0.45}
+          className={isHappy ? "ear-twitch-right" : ""}
+        />
+
+        {/* Visor Area */}
+        <rect
+          x="10"
+          y="15"
+          width="28"
+          height="16"
+          rx="7"
+          fill={theme === 'light' ? '#0f172a' : '#030712'}
+          stroke={eyeColor}
+          strokeWidth="0.8"
+          strokeOpacity="0.5"
+        />
+
+        {/* Thinking Scanner Bar */}
+        {isThinking && (
+          <line
+            x1="12"
+            y1="23"
+            x2="36"
+            y2="23"
+            stroke="#c084fc"
+            strokeWidth="1.5"
+            strokeDasharray="6 4"
+            className="thinking-scanner-line"
+            filter="url(#pillEyeGlow)"
+          />
+        )}
+
+        {/* Eyes Rendering */}
+        {blink && !isHappy ? (
+          // Blinking Eyelid Slits
+          <>
+            <line x1="14" y1="23" x2="21" y2="23" stroke={eyeColor} strokeWidth="1.8" strokeLinecap="round" />
+            <line x1="27" y1="23" x2="34" y2="23" stroke={eyeColor} strokeWidth="1.8" strokeLinecap="round" />
+          </>
+        ) : isHappy ? (
+          // Joyful Happy Crescent Eyes (^ ^)
+          <>
+            <path
+              d="M 14 24 Q 17.5 19 21 24"
+              fill="none"
+              stroke="#34d399"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              filter="url(#pillEyeGlow)"
+            />
+            <path
+              d="M 27 24 Q 30.5 19 34 24"
+              fill="none"
+              stroke="#34d399"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              filter="url(#pillEyeGlow)"
+            />
+          </>
+        ) : (
+          // OLED Glowing Pupils
+          <>
+            {/* Left Eye */}
+            <ellipse
+              cx="17.5"
+              cy="23"
+              rx={isListening ? "3.6" : "3.0"}
+              ry={isListening ? "4.0" : isSpeaking ? "3.6" : "3.2"}
+              fill={eyeColor}
+              filter="url(#pillEyeGlow)"
+              className={isSpeaking ? "eye-speaking-pulse" : ""}
+            />
+            <circle cx="16.5" cy="21.8" r="1.0" fill="#ffffff" />
+
+            {/* Right Eye */}
+            <ellipse
+              cx="30.5"
+              cy="23"
+              rx={isListening ? "3.6" : "3.0"}
+              ry={isListening ? "4.0" : isSpeaking ? "3.6" : "3.2"}
+              fill={eyeColor}
+              filter="url(#pillEyeGlow)"
+              className={isSpeaking ? "eye-speaking-pulse" : ""}
+            />
+            <circle cx="29.5" cy="21.8" r="1.0" fill="#ffffff" />
+          </>
+        )}
+
+        {/* Cute Sony Aibo Sensor Nose */}
+        <circle cx="24" cy="33.5" r="1.4" fill={theme === 'light' ? '#334155' : '#475569'} />
+        <circle cx="23.7" cy="33.2" r="0.4" fill="#94a3b8" />
+
+        {/* Subtle Happy Mouth Smile Notch */}
+        {isHappy && (
+          <path
+            d="M 21.5 36.5 Q 24 38.5 26.5 36.5"
+            fill="none"
+            stroke="#34d399"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+          />
+        )}
+      </svg>
+    </div>
+  );
+}
 
 export default function DynamicIsland({
   activeTab,
@@ -258,8 +446,12 @@ export default function DynamicIsland({
   ];
 
   const expressions = [
-    { id: 'listening', label: 'Listen', icon: Mic },
-    { id: 'thinking', label: 'Think', icon: Brain }
+    { id: 'wave', label: 'Wave', icon: Sparkles, isAction: true },
+    { id: 'spin', label: 'Spin', icon: RotateCw, isAction: true },
+    { id: 'cheer', label: 'Cheer', icon: Zap, isAction: true },
+    { id: 'dance', label: 'Dance', icon: Music, isAction: true },
+    { id: 'listening', label: 'Listen', icon: Mic, isAction: false },
+    { id: 'thinking', label: 'Think', icon: Brain, isAction: false }
   ];
 
   const handleTogglePin = async (e) => {
@@ -294,282 +486,295 @@ export default function DynamicIsland({
         onClick={!isExpanded ? handlePillClick : undefined}
       >
         {/* =================================================================== */}
-        {/* 1. WIDE COMPACT PILL MODE (Top of Screen)                           */}
+        {/* 1. WIDE COMPACT PILL LAYER (Always mounted, hardware accelerated)    */}
         {/* =================================================================== */}
-        {!isExpanded ? (
-          <>
-            {/* Left: 3D RoboDog Face & Status */}
-            <div className="pill-left">
-              <div className="pill-robot-avatar">
-                <RobotAvatar
-                  status={aiStatus}
-                  compact={true}
-                  theme={activeTheme}
-                  className="w-full h-full"
-                />
-              </div>
+        <div className={`island-pill-layer ${isExpanded ? 'layer-hidden' : 'layer-visible'}`}>
+          {/* Left: 120fps Cyber RoboDog Face & Status */}
+          <div className="pill-left">
+            <div className="pill-robot-avatar">
+              <PillRoboFace
+                status={aiStatus}
+                theme={activeTheme}
+              />
+            </div>
 
-              <div className="pill-meta">
-                <div className="pill-title">
-                  <span className={`pill-status-dot ${aiStatus}`} />
-                  <span>Moco Robodog</span>
-                </div>
-                <div className="pill-subtitle">
-                  {voiceStatusText ? (
-                    <span style={{ color: '#38bdf8', fontWeight: 600 }}>{voiceStatusText}</span>
-                  ) : voiceTranscript ? (
-                    <span style={{ color: '#38bdf8' }}>{`Hearing: "${voiceTranscript}"`}</span>
-                  ) : isMusicPlaying && nowPlayingTitle ? (
-                    <span style={{ color: '#38bdf8', fontWeight: 500 }}>{`Playing: ${nowPlayingTitle}`}</span>
-                  ) : (
-                    <>
-                      {aiStatus === 'thinking' && 'Analyzing query...'}
-                      {aiStatus === 'speaking' && 'Streaming voice audio...'}
-                      {aiStatus === 'listening' && 'Listening attentively...'}
-                      {aiStatus === 'happy' && 'Joyful & Ready!'}
-                      {(aiStatus === 'ready' || aiStatus === 'idle' || !aiStatus) && 'Moco Online • Click to expand'}
-                    </>
-                  )}
-                </div>
+            <div className="pill-meta">
+              <div className="pill-title">
+                <span className={`pill-status-dot ${aiStatus}`} />
+                <span>Moco Robodog</span>
+              </div>
+              <div className="pill-subtitle">
+                {voiceStatusText ? (
+                  <span style={{ color: '#38bdf8', fontWeight: 600 }}>{voiceStatusText}</span>
+                ) : voiceTranscript ? (
+                  <span style={{ color: '#38bdf8' }}>{`Hearing: "${voiceTranscript}"`}</span>
+                ) : isMusicPlaying && nowPlayingTitle ? (
+                  <span style={{ color: '#38bdf8', fontWeight: 500 }}>{`Playing: ${nowPlayingTitle}`}</span>
+                ) : (
+                  <>
+                    {aiStatus === 'thinking' && 'Analyzing query...'}
+                    {aiStatus === 'speaking' && 'Streaming voice audio...'}
+                    {aiStatus === 'listening' && 'Listening attentively...'}
+                    {aiStatus === 'happy' && 'Joyful & Ready!'}
+                    {(aiStatus === 'ready' || aiStatus === 'idle' || !aiStatus) && 'Moco Online • Click to expand'}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Middle: Live Audio Waveform Equalizer */}
+          {(() => {
+            const isAudioActive = isMusicPlaying || aiStatus === 'speaking' || aiStatus === 'listening';
+            return (
+              <div
+                className={`pill-center ${isAudioActive ? 'active' : 'idle'}`}
+                title={isMusicPlaying ? `Now Playing: ${nowPlayingTitle}` : "Live Audio Waveform Visualizer"}
+              >
+                {[12, 18, 9, 22, 14, 26, 16, 24, 11, 20, 15, 19, 10, 14].map((h, i) => (
+                  <div
+                    key={i}
+                    className={`soundwave-bar ${isAudioActive ? 'active' : 'idle'}`}
+                    style={{
+                      height: `${h}px`,
+                      animationDelay: `${(i * 0.07).toFixed(2)}s`
+                    }}
+                  />
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* Right: Telemetry & Quick Action Controls */}
+          <div className="pill-actions">
+            {/* Battery & Telemetry Badge */}
+            <div
+              className="pill-badge"
+              title={`Device Battery: ${batteryPercent}%${isCharging ? ' (Charging)' : ''}`}
+            >
+              <Battery size={13} color={activeTheme === 'light' ? '#0284c7' : '#38bdf8'} />
+              <span>{batteryPercent}%</span>
+            </div>
+
+            {/* Theme Indicator & Toggle */}
+            <button
+              type="button"
+              className="pill-btn"
+              title={`Theme: ${themePreference.toUpperCase()} (${activeTheme}). Click to cycle.`}
+              onClick={cycleTheme}
+            >
+              {activeTheme === 'light' ? <Sun size={14} /> : <Moon size={14} />}
+            </button>
+
+            {/* Mic / Listen Toggle */}
+            <button
+              type="button"
+              className={`pill-btn ${aiStatus === 'listening' ? 'text-red-400 border-red-500' : ''}`}
+              title={aiStatus === 'listening' ? 'Stop Listening' : 'Voice Command Mic'}
+              onClick={handleMicClick}
+            >
+              <Mic size={14} />
+            </button>
+
+            {/* Expand Chevron */}
+            <button
+              type="button"
+              className="pill-btn"
+              title="Expand Dynamic Island"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(true);
+              }}
+            >
+              <ChevronDown size={15} />
+            </button>
+          </div>
+        </div>
+
+        {/* =================================================================== */}
+        {/* 2. EXPANDED WIDE DYNAMIC ISLAND LAYER (Always mounted, zero lag)     */}
+        {/* =================================================================== */}
+        <div className={`island-expanded-layer ${isExpanded ? 'layer-visible' : 'layer-hidden'}`}>
+          {/* Top Island Header */}
+          <header className="island-header drag-region">
+            <div className="island-brand no-drag">
+              <Sparkles size={16} color={activeTheme === 'light' ? '#0284c7' : '#06b6d4'} />
+              <span>Moco.AI</span>
+              <div className="island-status-pill">
+                <span className={`pill-status-dot ${aiStatus}`} />
+                <span>
+                  {voiceStatusText ? voiceStatusText : voiceTranscript ? `Hearing: "${voiceTranscript}"` : ((aiStatus === 'idle' || aiStatus === 'ready' || !aiStatus) ? 'ONLINE' : aiStatus.toUpperCase())}
+                </span>
               </div>
             </div>
 
-            {/* Middle: Live Audio Waveform Equalizer */}
-            {(() => {
-              const isAudioActive = isMusicPlaying || aiStatus === 'speaking' || aiStatus === 'listening';
-              return (
-                <div
-                  className={`pill-center ${isAudioActive ? 'active' : 'idle'}`}
-                  title={isMusicPlaying ? `Now Playing: ${nowPlayingTitle}` : "Live Audio Waveform Visualizer"}
-                >
-                  {[12, 18, 9, 22, 14, 26, 16, 24, 11, 20, 15, 19, 10, 14].map((h, i) => (
-                    <div
-                      key={i}
-                      className={`soundwave-bar ${isAudioActive ? 'active' : 'idle'}`}
-                      style={{
-                        height: `${h}px`,
-                        animationDelay: `${(i * 0.07).toFixed(2)}s`
-                      }}
-                    />
-                  ))}
-                </div>
-              );
-            })()}
+            {/* Navigation Tabs */}
+            <nav className="island-tabs no-drag">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`island-tab-btn ${isActive ? 'active' : ''}`}
+                  >
+                    <Icon size={14} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
 
-            {/* Right: Telemetry & Quick Action Controls */}
-            <div className="pill-actions">
-              {/* Battery & Telemetry Badge */}
-              <div
-                className="pill-badge"
-                title={`Device Battery: ${batteryPercent}%${isCharging ? ' (Charging)' : ''}`}
-              >
-                <Battery size={13} color={activeTheme === 'light' ? '#0284c7' : '#38bdf8'} />
-                <span>{batteryPercent}%</span>
-              </div>
-
-              {/* Theme Indicator & Toggle */}
+            {/* Header Action Controls */}
+            <div className="island-controls no-drag">
+              {/* Theme Switcher Button */}
               <button
                 type="button"
-                className="pill-btn"
-                title={`Theme: ${themePreference.toUpperCase()} (${activeTheme}). Click to cycle.`}
                 onClick={cycleTheme}
+                className="island-control-btn"
+                title={`Current: ${themePreference.toUpperCase()} (${activeTheme}). Click to change.`}
               >
                 {activeTheme === 'light' ? <Sun size={14} /> : <Moon size={14} />}
               </button>
 
-              {/* Mic / Listen Toggle */}
+              {/* Pin Button */}
               <button
                 type="button"
-                className={`pill-btn ${aiStatus === 'listening' ? 'text-red-400 border-red-500' : ''}`}
-                title={aiStatus === 'listening' ? 'Stop Listening' : 'Voice Command Mic'}
-                onClick={handleMicClick}
+                onClick={handleTogglePin}
+                className={`island-control-btn ${isPinned ? 'text-cyan-400' : ''}`}
+                title={isPinned ? 'Pinned Always On Top' : 'Pin Always On Top'}
               >
-                <Mic size={14} />
+                <Pin size={14} />
               </button>
 
-              {/* Expand Chevron */}
+              {/* Minimize to Pill */}
               <button
                 type="button"
-                className="pill-btn"
-                title="Expand Dynamic Island"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsExpanded(true);
-                }}
+                onClick={handleMinimize}
+                className="island-control-btn"
+                title="Collapse to Dynamic Island Pill"
               >
-                <ChevronDown size={15} />
+                <Minimize2 size={14} />
+              </button>
+
+              {/* Close / Hide Window */}
+              <button
+                type="button"
+                onClick={handleClose}
+                className="island-control-btn close"
+                title="Hide Window (Alt+Space)"
+              >
+                <X size={15} />
               </button>
             </div>
-          </>
-        ) : (
-          /* =================================================================== */
-          /* 2. EXPANDED WIDE DYNAMIC ISLAND MODE                                */
-          /* =================================================================== */
-          <>
-            {/* Top Island Header */}
-            <header className="island-header drag-region">
-              <div className="island-brand no-drag">
-                <Sparkles size={16} color={activeTheme === 'light' ? '#0284c7' : '#06b6d4'} />
-                <span>Moco.AI</span>
-                <div className="island-status-pill">
-                  <span className={`pill-status-dot ${aiStatus}`} />
-                  <span>
-                    {voiceStatusText ? voiceStatusText : voiceTranscript ? `Hearing: "${voiceTranscript}"` : ((aiStatus === 'idle' || aiStatus === 'ready' || !aiStatus) ? 'ONLINE' : aiStatus.toUpperCase())}
-                  </span>
-                </div>
+          </header>
+
+          {/* Island Body Grid */}
+          <div className="island-main">
+            {/* Left Column: 3D RoboDog & Expression Controls */}
+            <aside className="island-robot-deck">
+              {/* 3D RoboDog Stage (Warm in memory, pauses render when collapsed) */}
+              <div className="island-robot-stage">
+                <RobotAvatar
+                  status={aiStatus}
+                  isMusicPlaying={isMusicPlaying}
+                  compact={false}
+                  active={isExpanded}
+                  theme={activeTheme}
+                  onRobotClick={() => {
+                    const actions = ['spin', 'wave', 'cheer', 'dance'];
+                    const chosen = actions[Math.floor(Math.random() * actions.length)];
+                    window.dispatchEvent(
+                      new CustomEvent('moco:robot-action', { detail: { action: chosen } })
+                    );
+                  }}
+                />
               </div>
 
-              {/* Navigation Tabs */}
-              <nav className="island-tabs no-drag">
-                {tabs.map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.id;
-                  return (
+              {/* Voice Command Response Box beneath 3D Robot */}
+              <div className="voice-answer-box">
+                <div className="voice-answer-badge">
+                  <div className="voice-answer-badge-left">
+                    <Sparkles size={12} color={activeTheme === 'light' ? '#0284c7' : '#38bdf8'} />
+                    <span>{voiceAnswer ? 'MOCO RESPONSE' : aiStatus === 'listening' ? 'LISTENING...' : aiStatus === 'thinking' ? 'THINKING...' : 'VOICE ASSISTANT'}</span>
+                  </div>
+                  {voiceAnswer && (
                     <button
-                      key={tab.id}
                       type="button"
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`island-tab-btn ${isActive ? 'active' : ''}`}
+                      className="voice-answer-close"
+                      onClick={() => setVoiceAnswer('')}
+                      title="Dismiss answer"
                     >
-                      <Icon size={14} />
-                      <span>{tab.label}</span>
+                      <X size={11} />
                     </button>
-                  );
-                })}
-              </nav>
-
-              {/* Header Action Controls */}
-              <div className="island-controls no-drag">
-                {/* Theme Switcher Button */}
-                <button
-                  type="button"
-                  onClick={cycleTheme}
-                  className="island-control-btn"
-                  title={`Current: ${themePreference.toUpperCase()} (${activeTheme}). Click to change.`}
-                >
-                  {activeTheme === 'light' ? <Sun size={14} /> : <Moon size={14} />}
-                </button>
-
-                {/* Pin Button */}
-                <button
-                  type="button"
-                  onClick={handleTogglePin}
-                  className={`island-control-btn ${isPinned ? 'text-cyan-400' : ''}`}
-                  title={isPinned ? 'Pinned Always On Top' : 'Pin Always On Top'}
-                >
-                  <Pin size={14} />
-                </button>
-
-                {/* Minimize to Pill */}
-                <button
-                  type="button"
-                  onClick={handleMinimize}
-                  className="island-control-btn"
-                  title="Collapse to Dynamic Island Pill"
-                >
-                  <Minimize2 size={14} />
-                </button>
-
-                {/* Close / Hide Window */}
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="island-control-btn close"
-                  title="Hide Window (Alt+Space)"
-                >
-                  <X size={15} />
-                </button>
+                  )}
+                </div>
+                <div className="voice-answer-text">
+                  {voiceAnswer ? (
+                    voiceAnswer
+                  ) : voiceTranscript && voiceTranscript !== 'Listening...' ? (
+                    <span className="hearing-text">{`Hearing: "${voiceTranscript}"`}</span>
+                  ) : aiStatus === 'listening' ? (
+                    <span className="hearing-text">Listening to your voice... Speak now!</span>
+                  ) : aiStatus === 'thinking' ? (
+                    <span className="thinking-text">Searching web & analyzing...</span>
+                  ) : (
+                    <span className="idle-placeholder">
+                      Click 🎙️ or ask a question (e.g. "What is the weather today?", "Open Pomodoro", "Calculate 25 * 4")
+                    </span>
+                  )}
+                </div>
               </div>
-            </header>
 
-            {/* Island Body Grid */}
-            <div className="island-main">
-              {/* Left Column: 3D RoboDog & Expression Controls */}
-              <aside className="island-robot-deck">
-                {/* 3D RoboDog Stage */}
-                <div className="island-robot-stage">
-                  <RobotAvatar
-                    status={aiStatus}
-                    compact={false}
-                    theme={activeTheme}
-                    onRobotClick={() => {
-                      onStatusChange?.('happy');
-                      setTimeout(() => onStatusChange?.('ready'), 2500);
-                    }}
-                  />
-                </div>
-
-                {/* Voice Command Response Box beneath 3D Robot */}
-                <div className="voice-answer-box">
-                  <div className="voice-answer-badge">
-                    <div className="voice-answer-badge-left">
-                      <Sparkles size={12} color={activeTheme === 'light' ? '#0284c7' : '#38bdf8'} />
-                      <span>{voiceAnswer ? 'MOCO RESPONSE' : aiStatus === 'listening' ? 'LISTENING...' : aiStatus === 'thinking' ? 'THINKING...' : 'VOICE ASSISTANT'}</span>
-                    </div>
-                    {voiceAnswer && (
+              {/* Robotic Dog Expression & Action Commands */}
+              <div className="island-expression-bar">
+                <div className="expression-title">Robot Actions & Commands</div>
+                <div className="expression-grid">
+                  {expressions.map((exp) => {
+                    const Icon = exp.icon;
+                    const isActive = exp.isAction
+                      ? false
+                      : aiStatus === exp.id;
+                    return (
                       <button
+                        key={exp.id}
                         type="button"
-                        className="voice-answer-close"
-                        onClick={() => setVoiceAnswer('')}
-                        title="Dismiss answer"
-                      >
-                        <X size={11} />
-                      </button>
-                    )}
-                  </div>
-                  <div className="voice-answer-text">
-                    {voiceAnswer ? (
-                      voiceAnswer
-                    ) : voiceTranscript && voiceTranscript !== 'Listening...' ? (
-                      <span className="hearing-text">{`Hearing: "${voiceTranscript}"`}</span>
-                    ) : aiStatus === 'listening' ? (
-                      <span className="hearing-text">Listening to your voice... Speak now!</span>
-                    ) : aiStatus === 'thinking' ? (
-                      <span className="thinking-text">Searching web & analyzing...</span>
-                    ) : (
-                      <span className="idle-placeholder">
-                        Click 🎙️ or ask a question (e.g. "What is the weather today?", "Open Pomodoro", "Calculate 25 * 4")
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Robotic Dog Expression Commands */}
-                <div className="island-expression-bar">
-                  <div className="expression-title">Command Expressions</div>
-                  <div className="expression-grid">
-                    {expressions.map((exp) => {
-                      const Icon = exp.icon;
-                      const isActive = aiStatus === exp.id;
-                      return (
-                        <button
-                          key={exp.id}
-                          type="button"
-                          onClick={() => {
-                            if (exp.id === 'listening') {
-                              handleMicClick();
-                            } else {
-                              onStatusChange?.(exp.id);
+                        onClick={() => {
+                          if (exp.isAction) {
+                            window.dispatchEvent(
+                              new CustomEvent('moco:robot-action', {
+                                detail: { action: exp.id }
+                              })
+                            );
+                            if (exp.id === 'dance' && !isMusicPlaying) {
+                              setActiveTab?.('music');
                             }
-                          }}
-                          className={`expression-btn ${isActive ? 'active' : ''}`}
-                        >
-                          <Icon size={12} />
-                          <span>{exp.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                          } else if (exp.id === 'listening') {
+                            handleMicClick();
+                          } else {
+                            onStatusChange?.(exp.id);
+                          }
+                        }}
+                        className={`expression-btn ${isActive ? 'active' : ''}`}
+                        title={`Make Moco ${exp.label}`}
+                      >
+                        <Icon size={12} />
+                        <span>{exp.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-              </aside>
+              </div>
+            </aside>
 
-              {/* Right Column: Active Widget Deck */}
-              <main className="island-widget-body">
-                {children}
-              </main>
-            </div>
-          </>
-        )}
+            {/* Right Column: Active Widget Deck (Maintained in DOM for 0ms tab recovery) */}
+            <main className="island-widget-body">
+              {children}
+            </main>
+          </div>
+        </div>
       </div>
     </div>
   );

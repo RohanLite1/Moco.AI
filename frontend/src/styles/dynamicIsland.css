@@ -54,31 +54,35 @@
   pointer-events: auto;
   position: relative;
   background: var(--island-bg);
-  backdrop-filter: blur(34px);
-  -webkit-backdrop-filter: blur(34px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--island-border);
   box-shadow: var(--island-glow);
-  transition: all 0.44s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+              height 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+              border-radius 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s ease,
+              background 0.25s ease;
   overflow: hidden;
   user-select: none;
   color: var(--island-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  transform: translateZ(0);
+  will-change: width, height, border-radius;
+  contain: paint layout;
 }
 
 /* ========================================================================= */
-/* 1. WIDE COMPACT PILL STATE                                                */
+/* 1. PERSISTENT DUAL-LAYER ARCHITECTURE & COMPACT PILL STATE                */
 /* ========================================================================= */
 .dynamic-island-shell.pill {
   width: 580px;
   max-width: 94vw;
   height: 56px;
   border-radius: 9999px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 12px 4px 6px;
   cursor: pointer;
 }
 
@@ -86,6 +90,68 @@
   border-color: var(--island-border-hover);
   box-shadow: var(--island-glow-active);
   transform: translateY(2px) scale(1.015);
+}
+
+.island-pill-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 14px 4px 6px;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  transform-origin: center center;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.island-expanded-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  transform-origin: center center;
+  transition: opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.island-pill-layer.layer-visible {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+  visibility: visible;
+  transition-delay: 0.05s;
+}
+
+.island-pill-layer.layer-hidden {
+  opacity: 0;
+  transform: scale(0.92);
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s linear 0.15s;
+}
+
+.island-expanded-layer.layer-visible {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+  visibility: visible;
+  transition-delay: 0.08s;
+}
+
+.island-expanded-layer.layer-hidden {
+  opacity: 0;
+  transform: scale(0.96);
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s linear 0.15s;
 }
 
 /* Pill Left Section: 3D RoboDog Face & Badge */
@@ -107,6 +173,20 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.3);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  contain: paint;
+}
+
+.pill-robot-avatar canvas,
+.island-robot-stage canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: auto;
+  transform: translateZ(0);
 }
 
 .pill-meta {
@@ -353,8 +433,7 @@
   height: 620px;
   max-height: 90vh;
   border-radius: 28px;
-  display: flex;
-  flex-direction: column;
+  cursor: default;
 }
 
 /* Island Header */
@@ -482,14 +561,18 @@
 
 .island-robot-stage {
   width: 100%;
-  height: 230px;
+  height: 235px;
   position: relative;
   border-radius: 20px;
-  background: radial-gradient(circle at center, rgba(6, 182, 212, 0.09) 0%, transparent 72%);
+  background: radial-gradient(circle at center, rgba(6, 182, 212, 0.12) 0%, rgba(147, 51, 234, 0.05) 55%, transparent 74%);
+  border: 1px solid var(--island-card-border);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.18);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+  transform: translateZ(0);
 }
 
 /* Voice Answer Box beneath 3D Robot */
@@ -586,7 +669,7 @@
 
 .expression-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
 }
 
@@ -625,6 +708,7 @@
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
+  contain: layout;
 }
 
 /* Animations */
@@ -637,4 +721,70 @@
     transform: scale(1.35);
     opacity: 1;
   }
+}
+
+/* 120fps Pill Vector Robo Face */
+.pill-robo-face {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  contain: strict;
+  animation: pillFaceFloat 4s infinite ease-in-out;
+}
+
+.pill-face-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+@keyframes pillFaceFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1px);
+  }
+}
+
+.ear-twitch-left {
+  transform-origin: 9px 14px;
+  animation: earTwitchLeft 0.8s infinite ease-in-out;
+}
+
+.ear-twitch-right {
+  transform-origin: 39px 14px;
+  animation: earTwitchRight 0.8s infinite ease-in-out;
+}
+
+@keyframes earTwitchLeft {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-8deg); }
+}
+
+@keyframes earTwitchRight {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(8deg); }
+}
+
+.eye-speaking-pulse {
+  animation: eyeSpeakPulse 0.4s infinite alternate ease-in-out;
+  transform-origin: center;
+}
+
+@keyframes eyeSpeakPulse {
+  0% { transform: scale(0.92); }
+  100% { transform: scale(1.12); }
+}
+
+.thinking-scanner-line {
+  animation: scannerSweep 1.2s infinite alternate ease-in-out;
+}
+
+@keyframes scannerSweep {
+  0% { stroke-dashoffset: 0; opacity: 0.6; }
+  100% { stroke-dashoffset: 20; opacity: 1; }
 }

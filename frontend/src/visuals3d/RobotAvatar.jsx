@@ -187,7 +187,9 @@ function createEarTexture() {
 export default function RobotAvatar({
   status = 'idle',
   compact = false,
+  active = true,
   theme = 'dark',
+  isMusicPlaying = false,
   onRobotClick,
   className = ''
 }) {
@@ -196,10 +198,30 @@ export default function RobotAvatar({
   statusRef.current = status;
   const themeRef = useRef(theme);
   themeRef.current = theme;
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  const musicPlayingRef = useRef(isMusicPlaying);
+  musicPlayingRef.current = isMusicPlaying;
 
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
+
+    // Listen to global music playback events
+    const handleMusicStatus = (e) => {
+      if (typeof e.detail?.isPlaying === 'boolean') {
+        musicPlayingRef.current = e.detail.isPlaying;
+      }
+    };
+    window.addEventListener('moco:music-status', handleMusicStatus);
+
+    let triggerActionGlobal = null;
+    const handleRobotAction = (e) => {
+      if (e.detail?.action && triggerActionGlobal) {
+        triggerActionGlobal(e.detail.action);
+      }
+    };
+    window.addEventListener('moco:robot-action', handleRobotAction);
 
     const width = mount.clientWidth || (compact ? 80 : 300);
     const height = mount.clientHeight || (compact ? 80 : 300);
@@ -215,7 +237,8 @@ export default function RobotAvatar({
       powerPreference: 'high-performance'
     });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.25;
     mount.appendChild(renderer.domElement);
@@ -739,7 +762,7 @@ export default function RobotAvatar({
     window.addEventListener('mousemove', handleMouseMove);
 
     // -------------------------------------------------------------------------
-    // 9. ANIMATION LOOP & SMOOTH 3D BLINK ENGINE
+    // 9. ADVANCED PROCEDURAL ANIMATION ENGINE & ACTION CHOREOGRAPHER
     // -------------------------------------------------------------------------
     let animationFrameId;
     const clock = new THREE.Clock();
@@ -748,27 +771,80 @@ export default function RobotAvatar({
     let nextBlinkDuration = 3.2; // Next blink in 3.2s
     let blinkPhase = 0; // 0 = open, >0 = in blink motion
 
-    // Wave timers for random periodic waving & answering gestures
+    // Wave timers for periodic idle waving
     let waveTimer = 0;
-    let nextWaveInterval = 6.0; // Next wave in 6-14s
-    const waveDuration = 2.4; // Wave animation lasts 2.4s
+    let nextWaveInterval = 9.0 + Math.random() * 8.0; // Random interval between 9s and 17s
+    const waveDuration = 2.8;
+
+    // Interactive & AI Answering Action State Machine
+    let currentAction = null; // { type: 'spin' | 'wave' | 'cheer' | 'dance', startTime: number, duration: number }
+    let actionCounter = 0; // Cycles actions: spin -> wave -> cheer -> ...
+    let postSpinBounce = 0;
+
+    const triggerAction = (actionType, customDuration = null) => {
+      const now = clock.getElapsedTime();
+      let d = customDuration;
+      if (!d) {
+        if (actionType === 'spin') d = 1.95;
+        else if (actionType === 'wave') d = 2.85;
+        else if (actionType === 'cheer' || actionType === 'raise_arms') d = 2.85;
+        else if (actionType === 'dance') d = 4.5;
+        else d = 2.6;
+      }
+      currentAction = {
+        type: actionType === 'raise_arms' ? 'cheer' : actionType,
+        startTime: now,
+        duration: d
+      };
+    };
+    triggerActionGlobal = triggerAction;
 
     let lastStatus = 'idle';
+    const tempParticleVec = new THREE.Vector3();
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
+      if (!activeRef.current) return;
+
       const delta = clock.getDelta();
       const elapsedTime = clock.getElapsedTime();
       const currentStatus = statusRef.current;
       const currentTheme = themeRef.current;
 
-      // Update wave timer logic
+      // Detect transition into 'speaking' when AI assistant starts answering
+      if (currentStatus === 'speaking' && lastStatus !== 'speaking') {
+        const answeringActions = ['spin', 'wave', 'cheer'];
+        const chosen = answeringActions[actionCounter % answeringActions.length];
+        actionCounter++;
+        triggerAction(chosen);
+      }
+
+      // Action timing and progress tracking
+      let actionProgress = -1;
+      let activeActionType = null;
+      if (currentAction) {
+        const elapsed = elapsedTime - currentAction.startTime;
+        if (elapsed < currentAction.duration) {
+          actionProgress = Math.max(0, Math.min(1, elapsed / currentAction.duration));
+          activeActionType = currentAction.type;
+        } else {
+          if (currentAction.type === 'spin') {
+            postSpinBounce = 0.35;
+          }
+          currentAction = null;
+        }
+      }
+
+      // Music playback detection
+      const isMusic = Boolean(musicPlayingRef.current || activeActionType === 'dance');
+
+      // Update wave timer logic for periodic idle wave
       waveTimer += delta;
       if (waveTimer >= nextWaveInterval + waveDuration) {
         waveTimer = 0;
-        nextWaveInterval = 7.0 + Math.random() * 8.0; // Random interval between 7s and 15s
+        nextWaveInterval = 9.0 + Math.random() * 8.0;
       }
-      const isPeriodicWaving = waveTimer >= nextWaveInterval && waveTimer < nextWaveInterval + waveDuration;
+      const isPeriodicWaving = !activeActionType && !isMusic && waveTimer >= nextWaveInterval && waveTimer < nextWaveInterval + waveDuration;
       const isAnswering = currentStatus === 'speaking';
 
       // Update Iris Texture if status changed
@@ -779,62 +855,142 @@ export default function RobotAvatar({
         eyeTexture.needsUpdate = true;
       }
 
-      // Smooth mouse interpolation
-      mouse.x += (mouse.targetX - mouse.x) * 0.055;
-      mouse.y += (mouse.targetY - mouse.y) * 0.055;
+      // Smooth frame-rate independent mouse interpolation
+      const mouseDamp = 1 - Math.exp(-9.0 * delta);
+      mouse.x += (mouse.targetX - mouse.x) * mouseDamp;
+      mouse.y += (mouse.targetY - mouse.y) * mouseDamp;
 
       if (modelState.isLoaded) {
         const { joints, initialRotations, initialPositions, eyeMaterials, antennaMaterials } = modelState;
 
-        // 1. Gentle body hover & respiration
-        const hoverSpeed = currentStatus === 'thinking' ? 2.6 : currentStatus === 'speaking' ? 3.0 : 1.6;
-        const hoverAmp = compact ? 0.025 : 0.055;
-        rootGroup.position.y = Math.sin(elapsedTime * hoverSpeed) * hoverAmp;
-        rootGroup.position.x = Math.sin(elapsedTime * 0.8) * 0.01;
+        // 1. Root Body Position, Hover, Spin Pirouette & Dance Bounce
+        if (activeActionType === 'spin') {
+          // 360-degree pirouette spin with smooth cosine easing
+          const spinEased = 0.5 * (1 - Math.cos(actionProgress * Math.PI));
+          rootGroup.rotation.y = spinEased * Math.PI * 2;
+          // Mid-spin hover elevation
+          rootGroup.position.y = Math.sin(actionProgress * Math.PI) * 0.085;
+          rootGroup.position.x = 0;
+          rootGroup.rotation.z = 0;
+        } else {
+          rootGroup.rotation.y = 0;
+          if (postSpinBounce > 0) {
+            postSpinBounce -= delta;
+            const bounceProgress = Math.max(0, postSpinBounce / 0.35);
+            rootGroup.position.y = -Math.sin((1 - bounceProgress) * Math.PI) * 0.024;
+            rootGroup.position.x = 0;
+            rootGroup.rotation.z = 0;
+          } else if (isMusic) {
+            // Subtle rhythmic music groove (118 BPM beat bounce)
+            const beat = elapsedTime * (118 / 60) * Math.PI * 2;
+            const bounceY = Math.abs(Math.sin(beat * 0.5)) * 0.038;
+            const swayX = Math.sin(beat * 0.25) * 0.024;
+            const tiltZ = Math.sin(beat * 0.25) * 0.035;
+            rootGroup.position.y = bounceY;
+            rootGroup.position.x = swayX;
+            rootGroup.rotation.z = tiltZ;
+          } else {
+            const hoverSpeed = currentStatus === 'thinking' ? 2.6 : currentStatus === 'speaking' ? 3.0 : 1.6;
+            const hoverAmp = compact ? 0.025 : 0.055;
+            rootGroup.position.y = Math.sin(elapsedTime * hoverSpeed) * hoverAmp;
+            rootGroup.position.x = Math.sin(elapsedTime * 0.8) * 0.01;
+            rootGroup.rotation.z = 0;
+          }
+        }
 
-        // 2. Head look-at cursor with expressive puppy tilts (Inverted horizontal sign to track cursor correctly)
+        // 2. Head Look-At, Expressive Puppy Tilts, Music Bobbing & Answering Nods
         if (joints.head && initialRotations.head) {
           const init = initialRotations.head;
-          const headTilt = Math.sin(elapsedTime * 0.6) * 0.05;
-          let statusTiltX = 0;
-          let statusTiltY = 0;
-          let statusTiltZ = 0;
 
-          if (currentStatus === 'thinking') {
-            statusTiltX = -0.15; // Inquisitive look up
-            statusTiltZ = 0.12;  // Curious puppy head cock
-          } else if (currentStatus === 'happy') {
-            statusTiltX = Math.sin(elapsedTime * 8) * 0.08; // Happy rhythmic nodding
-            statusTiltZ = Math.sin(elapsedTime * 4) * 0.06;
-          } else if (currentStatus === 'speaking') {
-            statusTiltX = Math.sin(elapsedTime * 12) * 0.06; // Speech nodding
-          } else if (currentStatus === 'listening') {
-            statusTiltZ = -0.10; // Attentive ear cock
-            statusTiltX = 0.05;
+          if (activeActionType === 'spin') {
+            joints.head.rotation.y = init.y - Math.sin(actionProgress * Math.PI * 2) * 0.22;
+            joints.head.rotation.x = init.x - 0.06 * Math.sin(actionProgress * Math.PI);
+            joints.head.rotation.z = init.z;
+          } else if (activeActionType === 'wave' || isPeriodicWaving) {
+            const waveEnv = activeActionType === 'wave'
+              ? (actionProgress < 0.15 ? actionProgress / 0.15 : actionProgress > 0.85 ? (1 - actionProgress) / 0.15 : 1)
+              : (Math.sin(((waveTimer - nextWaveInterval) / waveDuration) * Math.PI));
+            let smoothWaveEnv = Math.max(0, Math.min(1, waveEnv));
+            smoothWaveEnv = smoothWaveEnv * smoothWaveEnv * (3 - 2 * smoothWaveEnv);
+            const wTime = (activeActionType === 'wave' ? actionProgress * currentAction.duration : (waveTimer - nextWaveInterval)) * 11;
+
+            joints.head.rotation.y = init.y + (0.12 * smoothWaveEnv) - mouse.x * 0.35;
+            joints.head.rotation.z = init.z + (0.12 * smoothWaveEnv) + mouse.x * 0.06;
+            joints.head.rotation.x = init.x - (0.05 * smoothWaveEnv) + Math.sin(wTime * 0.5) * 0.03 * smoothWaveEnv - mouse.y * 0.25;
+          } else if (activeActionType === 'cheer') {
+            const cheerEnvRaw = actionProgress < 0.15 ? actionProgress / 0.15 : actionProgress > 0.85 ? (1 - actionProgress) / 0.15 : 1;
+            let smoothCheer = Math.max(0, Math.min(1, cheerEnvRaw));
+            smoothCheer = smoothCheer * smoothCheer * (3 - 2 * smoothCheer);
+            const cTime = actionProgress * currentAction.duration;
+            joints.head.rotation.x = init.x - (0.14 * smoothCheer) + Math.sin(cTime * 10) * 0.04 * smoothCheer - mouse.y * 0.2;
+            joints.head.rotation.y = init.y - mouse.x * 0.3;
+            joints.head.rotation.z = init.z + Math.sin(cTime * 5) * 0.06 * smoothCheer + mouse.x * 0.06;
+          } else if (isMusic) {
+            const beat = elapsedTime * (118 / 60) * Math.PI * 2;
+            const headNod = (Math.sin(beat) > 0 ? Math.sin(beat) * 0.08 : Math.sin(beat) * 0.02);
+            joints.head.rotation.x = init.x + headNod - mouse.y * 0.25;
+            joints.head.rotation.y = init.y + Math.sin(beat * 0.25) * 0.12 - mouse.x * 0.35;
+            joints.head.rotation.z = init.z + Math.cos(beat * 0.25) * 0.09 + mouse.x * 0.08;
+          } else {
+            const headTilt = Math.sin(elapsedTime * 0.6) * 0.05;
+            let statusTiltX = 0;
+            let statusTiltY = 0;
+            let statusTiltZ = 0;
+
+            if (currentStatus === 'thinking') {
+              statusTiltX = -0.15; // Inquisitive look up
+              statusTiltZ = 0.12;  // Curious puppy head cock
+            } else if (currentStatus === 'happy') {
+              statusTiltX = Math.sin(elapsedTime * 8) * 0.08;
+              statusTiltZ = Math.sin(elapsedTime * 4) * 0.06;
+            } else if (currentStatus === 'speaking') {
+              statusTiltX = Math.sin(elapsedTime * 11) * 0.06; // Speech syllable cadence
+              statusTiltY = Math.sin(elapsedTime * 2.5) * 0.08;
+              statusTiltZ = Math.sin(elapsedTime * 3) * 0.04;
+            } else if (currentStatus === 'listening') {
+              statusTiltZ = -0.10; // Attentive ear cock
+              statusTiltX = 0.05;
+            }
+
+            joints.head.rotation.y = init.y - mouse.x * 0.45 + Math.sin(elapsedTime * 0.4) * 0.02 + statusTiltY;
+            joints.head.rotation.x = init.x - mouse.y * 0.35 + Math.sin(elapsedTime * 0.6) * 0.02 + statusTiltX;
+            joints.head.rotation.z = init.z + mouse.x * 0.12 + headTilt + statusTiltZ;
           }
-
-          joints.head.rotation.y = init.y - mouse.x * 0.45 + Math.sin(elapsedTime * 0.4) * 0.02 + statusTiltY;
-          joints.head.rotation.x = init.x - mouse.y * 0.35 + Math.sin(elapsedTime * 0.6) * 0.02 + statusTiltX;
-          joints.head.rotation.z = init.z + mouse.x * 0.12 + headTilt + statusTiltZ;
         }
 
-        // 3. Antenna spring physics, waggle & bobble
+        // 3. Antenna Dynamics, Spring Waggle & Inertia
         if (joints.antenna && initialRotations.antenna) {
           const init = initialRotations.antenna;
-          const waggleSpeed = currentStatus === 'thinking' ? 12 : currentStatus === 'happy' ? 10 : 3.5;
-          const waggleAmp = currentStatus === 'thinking' ? 0.22 : currentStatus === 'happy' ? 0.18 : 0.06;
-          const inertiaX = mouse.y * 0.15;
-          const inertiaZ = mouse.x * 0.2;
-          joints.antenna.rotation.z = init.z + Math.sin(elapsedTime * waggleSpeed) * waggleAmp + inertiaZ;
-          joints.antenna.rotation.x = init.x + Math.cos(elapsedTime * (waggleSpeed * 0.8)) * (waggleAmp * 0.6) + inertiaX;
+          if (activeActionType === 'spin') {
+            joints.antenna.rotation.z = init.z - Math.sin(actionProgress * Math.PI) * 0.32;
+            joints.antenna.rotation.x = init.x;
+          } else if (activeActionType === 'cheer') {
+            const cheerEnv = Math.max(0, Math.min(1, actionProgress < 0.15 ? actionProgress / 0.15 : actionProgress > 0.85 ? (1 - actionProgress) / 0.15 : 1));
+            joints.antenna.rotation.z = init.z + Math.sin(actionProgress * currentAction.duration * 16) * 0.24 * cheerEnv;
+            joints.antenna.rotation.x = init.x + 0.08 * cheerEnv;
+          } else if (isMusic) {
+            const beat = elapsedTime * (118 / 60) * Math.PI * 2;
+            joints.antenna.rotation.z = init.z + Math.sin(beat * 2) * 0.16;
+            joints.antenna.rotation.x = init.x + Math.cos(beat * 2) * 0.12;
+          } else {
+            const waggleSpeed = currentStatus === 'thinking' ? 12 : currentStatus === 'happy' ? 10 : currentStatus === 'speaking' ? 8 : 3.5;
+            const waggleAmp = currentStatus === 'thinking' ? 0.22 : currentStatus === 'happy' ? 0.18 : currentStatus === 'speaking' ? 0.12 : 0.06;
+            const inertiaX = mouse.y * 0.15;
+            const inertiaZ = mouse.x * 0.2;
+            joints.antenna.rotation.z = init.z + Math.sin(elapsedTime * waggleSpeed) * waggleAmp + inertiaZ;
+            joints.antenna.rotation.x = init.x + Math.cos(elapsedTime * (waggleSpeed * 0.8)) * (waggleAmp * 0.6) + inertiaX;
+          }
         }
 
-        // 4. Ears twitching & expressive reaction
+        // 4. Ears Twitching & Musical Flap
         if (joints.ears && initialRotations.ears) {
           const init = initialRotations.ears;
           let earWiggle = 0;
-          if (currentStatus === 'happy') {
-            earWiggle = Math.sin(elapsedTime * 14) * 0.12;
+          if (isMusic) {
+            const beat = elapsedTime * (118 / 60) * Math.PI * 2;
+            earWiggle = Math.abs(Math.sin(beat)) * 0.12;
+          } else if (currentStatus === 'happy' || activeActionType === 'cheer') {
+            earWiggle = Math.sin(elapsedTime * 14) * 0.14;
           } else if (currentStatus === 'listening') {
             earWiggle = 0.08 + Math.sin(elapsedTime * 5) * 0.03;
           } else {
@@ -844,46 +1000,94 @@ export default function RobotAvatar({
           joints.ears.rotation.z = init.z - (mouse.x * 0.04);
         }
 
-        // 5. Left and Right Arms: Interactive Waving & Conversational Gestures
+        // 5. Left and Right Arms: High Waving, Double-Arm Raising, Pirouette & Music Groove
         if (joints.leftArm && initialRotations.leftArm && joints.rightArm && initialRotations.rightArm) {
           const initL = initialRotations.leftArm;
           const initR = initialRotations.rightArm;
 
-          if (isAnswering) {
-            // Conversational arm gestures while answering speech/questions
-            joints.rightArm.rotation.x = initR.x - 0.75 + Math.sin(elapsedTime * 9) * 0.22;
-            joints.rightArm.rotation.y = initR.y + Math.cos(elapsedTime * 7) * 0.25;
-            joints.rightArm.rotation.z = initR.z + 0.25 + Math.sin(elapsedTime * 6) * 0.12;
+          if (activeActionType === 'spin') {
+            // Outstretched arms during spin pirouette
+            const spread = Math.sin(actionProgress * Math.PI);
+            joints.leftArm.rotation.x = initL.x - (1.28 * spread);
+            joints.rightArm.rotation.x = initR.x - (1.28 * spread);
+            joints.leftArm.rotation.z = initL.z - (0.42 * spread);
+            joints.rightArm.rotation.z = initR.z + (0.42 * spread);
+            joints.leftArm.rotation.y = initL.y;
+            joints.rightArm.rotation.y = initR.y;
+          } else if (activeActionType === 'wave' || (!activeActionType && isPeriodicWaving)) {
+            // High, natural, visible greeting wave
+            const waveRaw = activeActionType === 'wave'
+              ? (actionProgress < 0.15 ? actionProgress / 0.15 : actionProgress > 0.85 ? (1 - actionProgress) / 0.15 : 1)
+              : (Math.sin(((waveTimer - nextWaveInterval) / waveDuration) * Math.PI));
+            let waveEnv = Math.max(0, Math.min(1, waveRaw));
+            waveEnv = waveEnv * waveEnv * (3 - 2 * waveEnv); // Smoothstep curve
 
-            joints.leftArm.rotation.x = initL.x - 0.45 + Math.cos(elapsedTime * 8) * 0.18;
-            joints.leftArm.rotation.y = initL.y - Math.sin(elapsedTime * 6) * 0.15;
-            joints.leftArm.rotation.z = initL.z - 0.18;
-          } else if (isPeriodicWaving) {
-            // Cute periodic waving at random intervals
-            const wavePhase = (waveTimer - nextWaveInterval) / waveDuration; // 0 to 1
-            const waveEnvelope = Math.sin(wavePhase * Math.PI); // Smooth rise and fall
+            const waveOscTime = (activeActionType === 'wave' ? actionProgress * currentAction.duration : (waveTimer - nextWaveInterval)) * 11;
 
-            // Lift right arm up into high wave
-            joints.rightArm.rotation.x = initR.x - (1.25 * waveEnvelope);
-            joints.rightArm.rotation.z = initR.z + (0.35 * waveEnvelope);
-            // Quick friendly paw wave oscillation
-            joints.rightArm.rotation.y = initR.y + (Math.sin(elapsedTime * 14) * 0.38 * waveEnvelope);
+            // Right arm raises high up above shoulder and waves left-right across chest
+            joints.rightArm.rotation.x = initR.x - (2.52 * waveEnv) + (Math.sin(waveOscTime) * 0.08 * waveEnv);
+            joints.rightArm.rotation.z = initR.z + (0.24 * waveEnv);
+            joints.rightArm.rotation.y = initR.y + (Math.sin(waveOscTime) * 0.45 * waveEnv);
 
-            // Left arm subtle balancing lean
-            joints.leftArm.rotation.x = initL.x - (0.15 * waveEnvelope);
-            joints.leftArm.rotation.z = initL.z - (0.1 * waveEnvelope);
+            // Left arm relaxed resting posture with balancing lean
+            joints.leftArm.rotation.x = initL.x - (0.18 * waveEnv) + Math.sin(elapsedTime * 1.5) * 0.04;
+            joints.leftArm.rotation.z = initL.z - (0.10 * waveEnv);
+            joints.leftArm.rotation.y = initL.y;
+          } else if (activeActionType === 'cheer') {
+            // Triumphant Double-Arm Cheer (Raises BOTH arms up into the air!)
+            const cheerRaw = actionProgress < 0.15 ? actionProgress / 0.15 : actionProgress > 0.85 ? (1 - actionProgress) / 0.15 : 1;
+            let cheerEnv = Math.max(0, Math.min(1, cheerRaw));
+            cheerEnv = cheerEnv * cheerEnv * (3 - 2 * cheerEnv);
+
+            const cheerTime = actionProgress * currentAction.duration;
+            const cheerPump = Math.sin(cheerTime * 9) * 0.16 * cheerEnv;
+
+            // BOTH arms raised high up overhead
+            joints.leftArm.rotation.x = initL.x - (2.65 * cheerEnv) + cheerPump;
+            joints.rightArm.rotation.x = initR.x - (2.65 * cheerEnv) + cheerPump;
+
+            // Spread outward in a victorious V
+            joints.leftArm.rotation.z = initL.z - (0.28 * cheerEnv);
+            joints.rightArm.rotation.z = initR.z + (0.28 * cheerEnv);
+
+            // Forearm and hand celebratory shake
+            joints.leftArm.rotation.y = initL.y - Math.cos(cheerTime * 9) * 0.22 * cheerEnv;
+            joints.rightArm.rotation.y = initR.y + Math.cos(cheerTime * 9) * 0.22 * cheerEnv;
+          } else if (isMusic) {
+            // Subtle musical dance groove on arms
+            const beat = elapsedTime * (118 / 60) * Math.PI * 2;
+            joints.rightArm.rotation.x = initR.x - 1.05 + Math.sin(beat) * 0.18;
+            joints.rightArm.rotation.y = initR.y + 0.18 + Math.cos(beat * 0.5) * 0.20;
+            joints.rightArm.rotation.z = initR.z + 0.12 + Math.sin(beat * 0.5) * 0.08;
+
+            joints.leftArm.rotation.x = initL.x - 0.85 + Math.cos(beat) * 0.16;
+            joints.leftArm.rotation.y = initL.y - 0.18 - Math.sin(beat * 0.5) * 0.18;
+            joints.leftArm.rotation.z = initL.z - 0.12 - Math.cos(beat * 0.5) * 0.08;
+          } else if (isAnswering) {
+            // Conversational explaining gestures while answering queries
+            joints.rightArm.rotation.x = initR.x - 0.85 + Math.sin(elapsedTime * 7.5) * 0.18;
+            joints.rightArm.rotation.y = initR.y + 0.25 + Math.cos(elapsedTime * 5.5) * 0.20;
+            joints.rightArm.rotation.z = initR.z + 0.18 + Math.sin(elapsedTime * 4) * 0.08;
+
+            joints.leftArm.rotation.x = initL.x - 0.55 + Math.cos(elapsedTime * 6.5) * 0.15;
+            joints.leftArm.rotation.y = initL.y - 0.18 - Math.sin(elapsedTime * 5) * 0.12;
+            joints.leftArm.rotation.z = initL.z - 0.15;
           } else if (currentStatus === 'happy') {
-            // Excited celebratory double arm wave
-            joints.leftArm.rotation.x = initL.x - 0.55 + Math.sin(elapsedTime * 9) * 0.25;
-            joints.rightArm.rotation.x = initR.x - 0.55 + Math.cos(elapsedTime * 9) * 0.25;
+            // Excited celebratory double arm bounce
+            joints.leftArm.rotation.x = initL.x - 0.65 + Math.sin(elapsedTime * 9) * 0.22;
+            joints.rightArm.rotation.x = initR.x - 0.65 + Math.cos(elapsedTime * 9) * 0.22;
             joints.leftArm.rotation.z = initL.z - 0.22;
             joints.rightArm.rotation.z = initR.z + 0.22;
             joints.rightArm.rotation.y = initR.y + Math.sin(elapsedTime * 12) * 0.2;
+            joints.leftArm.rotation.y = initL.y;
           } else if (currentStatus === 'thinking') {
             // Pondering pose: right arm raises toward chin
             joints.rightArm.rotation.x = initR.x - 0.62 + Math.sin(elapsedTime * 3) * 0.04;
             joints.rightArm.rotation.y = initR.y + 0.18;
+            joints.rightArm.rotation.z = initR.z;
             joints.leftArm.rotation.x = initL.x + Math.sin(elapsedTime * 2) * 0.04;
+            joints.leftArm.rotation.y = initL.y;
+            joints.leftArm.rotation.z = initL.z;
           } else {
             // Idle gentle resting swing
             joints.leftArm.rotation.x = initL.x + Math.sin(elapsedTime * 1.8) * 0.06;
@@ -895,32 +1099,55 @@ export default function RobotAvatar({
           }
         }
 
-        // 6. Chest, Spine & Neck natural breathing
+        // 6. Chest, Spine & Neck Natural Respiration & Music Twist
         if (joints.chest && initialPositions.chest) {
-          joints.chest.position.y = initialPositions.chest.y + Math.sin(elapsedTime * 2.2) * 0.003;
+          const breath = isMusic ? Math.sin(elapsedTime * (118 / 60) * Math.PI * 2) * 0.005 : Math.sin(elapsedTime * 2.2) * 0.003;
+          joints.chest.position.y = initialPositions.chest.y + breath;
+        }
+        if (joints.midSpine && initialRotations.midSpine) {
+          const spineTwist = isMusic ? -Math.sin(elapsedTime * (118 / 60) * Math.PI * 0.5) * 0.05 : 0;
+          joints.midSpine.rotation.y = initialRotations.midSpine.y + spineTwist;
+        }
+        if (joints.hips && initialRotations.hips) {
+          const hipSway = isMusic ? Math.sin(elapsedTime * (118 / 60) * Math.PI * 0.5) * 0.06 : 0;
+          joints.hips.rotation.z = initialRotations.hips.z + hipSway;
         }
         if (joints.neck && initialRotations.neck) {
           joints.neck.rotation.x = initialRotations.neck.x - mouse.y * 0.08 + Math.sin(elapsedTime * 1.2) * 0.015;
           joints.neck.rotation.y = initialRotations.neck.y - mouse.x * 0.1;
         }
 
-        // 7. Wheels subtle roll with body motion
+        // 7. Wheels Dynamic Roll & Music Tapping
         if (joints.leftWheel && joints.rightWheel) {
-          const wheelRoll = (-mouse.x * 0.04) + Math.sin(elapsedTime * 2) * 0.015;
+          const beat = elapsedTime * (118 / 60) * Math.PI * 2;
+          const wheelRoll = isMusic
+            ? Math.sin(beat) * 0.025
+            : (-mouse.x * 0.04) + Math.sin(elapsedTime * 2) * 0.015;
           joints.leftWheel.rotation.x += wheelRoll;
-          joints.rightWheel.rotation.x += wheelRoll;
+          joints.rightWheel.rotation.x += (isMusic ? -wheelRoll : wheelRoll);
         }
 
         // 8. Dynamic OLED Eyes & Antenna Light Emissive Pulsing
         let targetColor = new THREE.Color(0x38bdf8); // Cyan
         let targetIntensity = 1.3;
 
-        if (currentStatus === 'thinking') {
+        if (isMusic) {
+          // Dynamic musical hue cycling
+          const hue = (elapsedTime * 0.18) % 1;
+          targetColor = new THREE.Color().setHSL(hue, 0.95, 0.6);
+          targetIntensity = 1.8 + Math.sin(elapsedTime * (118 / 60) * Math.PI * 2) * 0.6;
+        } else if (activeActionType === 'cheer' || currentStatus === 'happy') {
+          targetColor = new THREE.Color(0x34d399); // Emerald Green celebration
+          targetIntensity = 2.0 + Math.sin(elapsedTime * 10) * 0.4;
+        } else if (activeActionType === 'spin') {
+          targetColor = new THREE.Color(0x38bdf8); // Radiant cyan streak
+          targetIntensity = 2.2;
+        } else if (activeActionType === 'wave') {
+          targetColor = new THREE.Color(0x38bdf8); // Warm welcoming cyan
+          targetIntensity = 1.8;
+        } else if (currentStatus === 'thinking') {
           targetColor = new THREE.Color(0xc084fc); // Electric Purple
           targetIntensity = 1.7 + Math.sin(elapsedTime * 8) * 0.5;
-        } else if (currentStatus === 'happy') {
-          targetColor = new THREE.Color(0x34d399); // Emerald Green
-          targetIntensity = 1.9 + Math.sin(elapsedTime * 10) * 0.4;
         } else if (currentStatus === 'listening') {
           targetColor = new THREE.Color(0x38bdf8); // Pulsing Cyan
           targetIntensity = 1.6 + Math.sin(elapsedTime * 6) * 0.5;
@@ -930,26 +1157,46 @@ export default function RobotAvatar({
         }
 
         for (const mat of eyeMaterials) {
-          mat.emissive.lerp(targetColor, 0.1);
+          mat.emissive.lerp(targetColor, 0.12);
           mat.emissiveIntensity = targetIntensity;
         }
         for (const mat of antennaMaterials) {
-          mat.emissive.lerp(targetColor, 0.1);
-          mat.emissiveIntensity = targetIntensity * 1.4;
+          mat.emissive.lerp(targetColor, 0.12);
+          mat.emissiveIntensity = targetIntensity * 1.35;
         }
       } else {
-        // Fallback: 1. Natural Gentle Hovering
-        const hoverSpeed = currentStatus === 'thinking' ? 2.8 : 1.5;
-        const hoverAmp = compact ? 0.03 : 0.07;
-        rootGroup.position.y = Math.sin(elapsedTime * hoverSpeed) * hoverAmp;
+        // Fallback: 1. Natural Gentle Hovering, Spin & Dance Bounce
+        if (activeActionType === 'spin') {
+          const spinEased = 0.5 * (1 - Math.cos(actionProgress * Math.PI));
+          rootGroup.rotation.y = spinEased * Math.PI * 2;
+          rootGroup.position.y = Math.sin(actionProgress * Math.PI) * 0.085;
+        } else {
+          rootGroup.rotation.y = 0;
+          if (isMusic) {
+            const beat = elapsedTime * (118 / 60) * Math.PI * 2;
+            rootGroup.position.y = Math.abs(Math.sin(beat * 0.5)) * 0.038;
+            rootGroup.position.x = Math.sin(beat * 0.25) * 0.024;
+          } else {
+            const hoverSpeed = currentStatus === 'thinking' ? 2.8 : 1.5;
+            const hoverAmp = compact ? 0.03 : 0.07;
+            rootGroup.position.y = Math.sin(elapsedTime * hoverSpeed) * hoverAmp;
+          }
+        }
 
         // Fallback: 2. Head Tilts & Look-At Mouse
         const maxRotX = 0.3;
         const maxRotY = 0.48;
         const headTilt = Math.sin(elapsedTime * 0.6) * 0.06;
-        headGroup.rotation.y = mouse.x * maxRotY + Math.sin(elapsedTime * 0.4) * 0.03;
-        headGroup.rotation.x = -mouse.y * maxRotX + Math.sin(elapsedTime * 0.6) * 0.025;
-        headGroup.rotation.z = -mouse.x * 0.12 + headTilt;
+        if (isMusic) {
+          const beat = elapsedTime * (118 / 60) * Math.PI * 2;
+          headGroup.rotation.x = (Math.sin(beat) > 0 ? Math.sin(beat) * 0.08 : 0) - mouse.y * maxRotX * 0.5;
+          headGroup.rotation.z = Math.cos(beat * 0.25) * 0.09;
+          headGroup.rotation.y = mouse.x * maxRotY + Math.sin(beat * 0.25) * 0.1;
+        } else {
+          headGroup.rotation.y = mouse.x * maxRotY + Math.sin(elapsedTime * 0.4) * 0.03;
+          headGroup.rotation.x = -mouse.y * maxRotX + Math.sin(elapsedTime * 0.6) * 0.025;
+          headGroup.rotation.z = -mouse.x * 0.12 + headTilt;
+        }
 
         // Fallback: 3. Eyeballs Smooth Gaze Look-At
         const maxEyeGazeX = 0.35;
@@ -978,10 +1225,14 @@ export default function RobotAvatar({
         leftEyelid.rotation.x = currentEyelidAngle;
         rightEyelid.rotation.x = currentEyelidAngle;
 
-        // Fallback: 5. Floppy Ear Sway & Waggle
+        // Fallback: 5. Floppy Ear Sway & Musical Flap
         let earSwayL = 0;
         let earSwayR = 0;
-        if (currentStatus === 'happy') {
+        if (isMusic) {
+          const beat = elapsedTime * (118 / 60) * Math.PI * 2;
+          earSwayL = Math.abs(Math.sin(beat)) * 0.14;
+          earSwayR = Math.abs(Math.sin(beat)) * 0.14;
+        } else if (currentStatus === 'happy' || activeActionType === 'cheer') {
           earSwayL = Math.sin(elapsedTime * 10) * 0.22;
           earSwayR = Math.cos(elapsedTime * 10) * 0.22;
         } else if (currentStatus === 'listening') {
@@ -1001,11 +1252,15 @@ export default function RobotAvatar({
           tonguePivot.position.z = 0.35 + Math.sin(elapsedTime * 14) * 0.03;
           tonguePivot.rotation.x = -0.08 + Math.sin(elapsedTime * 12) * 0.04;
           tonguePivot.rotation.z = 0;
-        } else if (currentStatus === 'happy') {
+        } else if (currentStatus === 'happy' || activeActionType === 'cheer') {
           targetJawOpen = 0.22 + Math.sin(elapsedTime * 6) * 0.04;
           tonguePivot.position.z = 0.44 + Math.sin(elapsedTime * 8) * 0.04;
           tonguePivot.rotation.x = -0.22 + Math.sin(elapsedTime * 8) * 0.06;
           tonguePivot.rotation.z = Math.sin(elapsedTime * 10) * 0.08;
+        } else if (isMusic) {
+          const beat = elapsedTime * (118 / 60) * Math.PI * 2;
+          targetJawOpen = Math.abs(Math.sin(beat)) * 0.12;
+          tonguePivot.position.z = 0.32;
         } else if (currentStatus === 'listening') {
           targetJawOpen = 0.06;
           tonguePivot.position.z = 0.31;
@@ -1046,19 +1301,19 @@ export default function RobotAvatar({
       ring1Mat.color.lerp(targetCol, 0.08);
       particleMat.color.lerp(targetCol, 0.08);
 
-      // 7. Aura Particles
+      // 7. Aura Particles (Zero-allocation in-place vector rotation)
       const positions = particleGeo.attributes.position.array;
       for (let i = 0; i < particleCount; i++) {
         const vel = particleVelocities[i];
-        const v = new THREE.Vector3(
+        tempParticleVec.set(
           positions[i * 3],
           positions[i * 3 + 1],
           positions[i * 3 + 2]
         );
-        v.applyAxisAngle(vel.axis, vel.orbitSpeed * (currentStatus === 'thinking' ? 2.5 : 1.0));
-        positions[i * 3] = v.x;
-        positions[i * 3 + 1] = v.y;
-        positions[i * 3 + 2] = v.z;
+        tempParticleVec.applyAxisAngle(vel.axis, vel.orbitSpeed * (currentStatus === 'thinking' ? 2.5 : 1.0));
+        positions[i * 3] = tempParticleVec.x;
+        positions[i * 3 + 1] = tempParticleVec.y;
+        positions[i * 3 + 2] = tempParticleVec.z;
       }
       particleGeo.attributes.position.needsUpdate = true;
 
@@ -1084,16 +1339,36 @@ export default function RobotAvatar({
       if (!mount) return;
       const newW = mount.clientWidth || width;
       const newH = mount.clientHeight || height;
-      camera.aspect = newW / newH;
-      camera.updateProjectionMatrix();
-      renderer.setSize(newW, newH);
+      if (newW > 10 && newH > 10) {
+        camera.aspect = newW / newH;
+        camera.updateProjectionMatrix();
+        renderer.setSize(newW, newH);
+      }
     };
 
     window.addEventListener('resize', handleResize);
 
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== 'undefined' && mount) {
+      resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const { width: newW, height: newH } = entry.contentRect;
+          if (newW > 10 && newH > 10) {
+            camera.aspect = newW / newH;
+            camera.updateProjectionMatrix();
+            renderer.setSize(newW, newH);
+          }
+        }
+      });
+      resizeObserver.observe(mount);
+    }
+
     return () => {
+      resizeObserver?.disconnect();
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('moco:music-status', handleMusicStatus);
+      window.removeEventListener('moco:robot-action', handleRobotAction);
       cancelAnimationFrame(animationFrameId);
       if (mount.contains(renderer.domElement)) {
         mount.removeChild(renderer.domElement);
